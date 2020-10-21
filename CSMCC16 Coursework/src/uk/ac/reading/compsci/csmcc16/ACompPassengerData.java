@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * CSMCC16 Coursework
+ * Description: Develop a Software Prototype of a MapReduce-like system
  * @author jacklau
  *
  */
