@@ -15,7 +15,7 @@ public class PassengerMileageReducer extends Reducer {
 	public void reduce(Object key, List values) {
 		// TODO Auto-generated method stub
 		double totTraveledDistance = 0.0;
-		System.out.println("[" + key + "]: " + values.size());
+//		System.out.println("[" + key + "]: " + values.size());
 		
 		Map mapAirportInfo = (Map) this.getRefData().get("AirportInfo");
 		// Create the output object
@@ -34,11 +34,11 @@ public class PassengerMileageReducer extends Reducer {
 			double dTraveledDistance = Utilities.getTraveledDistance(objAirportFrom.getLatitude(), objAirportFrom.getLongitude(), 
 					objAirportTo.getLatitude(), objAirportTo.getLongitude());
 
-			System.out.println(passengerID + "," +
-					sAirportFrom + "," +
-					sAirportTo + "," +
-					dTraveledDistance
-					);
+//			System.out.println(passengerID + "," +
+//					sAirportFrom + "," +
+//					sAirportTo + "," +
+//					dTraveledDistance
+//					);
 			totTraveledDistance = totTraveledDistance + dTraveledDistance;
 /*			
  * 

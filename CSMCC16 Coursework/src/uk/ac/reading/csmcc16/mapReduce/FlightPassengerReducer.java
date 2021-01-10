@@ -16,7 +16,7 @@ public class FlightPassengerReducer extends Reducer {
 	public void reduce(Object key, List values) {
 		// TODO Auto-generated method stub
 		int passengerCount = 0;
-		System.out.println("[" + key + "]: " + values.size());
+//		System.out.println("[" + key + "]: " + values.size());
 		// Create the output object
 		FlightPassengerInfo objFP = null;		
 		for (int i=0; i<values.size();i++) {
@@ -30,12 +30,12 @@ public class FlightPassengerReducer extends Reducer {
 			String depTime =  new SimpleDateFormat("hh:mm:ss").format(new Date(objPD.getDepTime()*1000));
 			String arrTime =  new SimpleDateFormat("hh:mm:ss").format(new Date(objPD.getDepTime()*1000+objPD.getTotFlightTime()*60*1000));
 			String flightTime = new SimpleDateFormat("hh:mm:ss").format(new Date(objPD.getTotFlightTime()*60*1000));
-			System.out.println(passengerID + "," +
-					airportFrom + "," +
-					airportTo + "," +
-					depTime + "," +
-					arrTime
-					);
+//			System.out.println(passengerID + "," +
+//					airportFrom + "," +
+//					airportTo + "," +
+//					depTime + "," +
+//					arrTime
+//					);
 			if (i==0)
 				 objFP = new FlightPassengerInfo(flightID, airportFrom, airportTo, depTime, arrTime, flightTime);	
 			objFP.addPassenger(passengerID);

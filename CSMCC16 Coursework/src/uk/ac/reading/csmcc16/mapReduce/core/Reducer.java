@@ -1,14 +1,18 @@
 package uk.ac.reading.csmcc16.mapReduce.core;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-public abstract class Reducer {
+public abstract class Reducer implements Runnable {
 	
-	Map mapKeyValuePairs;
-	Map mapResult = new HashMap();
+	Object oKey;
+	CopyOnWriteArrayList lstValues;
+	ConcurrentHashMap mapResult;// = new ConcurrentHashMap();
 	Map<String, Object> mapRefData;
 	
     // constructor
@@ -17,11 +21,12 @@ public abstract class Reducer {
     // Execute the reduce function for each key-value pair in the intermediate 
     // results output by the mapper
     public void run() {
-        Iterator iterator = mapKeyValuePairs.entrySet().iterator();
-        while(iterator.hasNext()) {
-            Map.Entry<Object, List<Object>> entry = (Map.Entry) iterator.next();
-            reduce(entry.getKey(), entry.getValue());
-        } 
+//        Iterator iterator = lstValues.entrySet().iterator();
+//        while(iterator.hasNext()) {
+//            Map.Entry<Object, List<Object>> entry = (Map.Entry) iterator.next();
+//            reduce(entry.getKey(), entry.getValue());
+//        } 
+    	reduce(oKey, lstValues);
     }
 
     // Abstract reduce function to the overwritten by objective-specific class
@@ -33,8 +38,12 @@ public abstract class Reducer {
     	mapResult.put(key, value);
     }
 
-	protected void setRecords(Map resultsFromMapper) {
-		mapKeyValuePairs = resultsFromMapper;
+	protected void setRecords(CopyOnWriteArrayList resultsFromMapper) {
+		lstValues = resultsFromMapper;
+	}
+	
+	protected void setKey(Object key) {
+		oKey = key;
 	}
 	
 	public Map getResult() {
@@ -44,6 +53,10 @@ public abstract class Reducer {
 	public void setRefData(Map dataSets) {
     	mapRefData = dataSets;
     }
+	
+	public void setResult(ConcurrentHashMap mapResult) {
+		this.mapResult = mapResult;
+	}
 	
 	public Map getRefData() {
     	return mapRefData;

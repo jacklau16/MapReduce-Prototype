@@ -6,13 +6,13 @@ import uk.ac.reading.csmcc16.mapReduce.core.*;
 public class FlightPassengerMapper extends Mapper {
 	int rowNum=1;
 	@Override
-	public void map(String value) {
+	public void map(Object value) {
 		// TODO Auto-generated method stub
-		String cols[] = value.split(",");
-		System.out.print(rowNum++ + ": ");
-		for (String col: cols)
-			System.out.print(col + " | ");
-		System.out.println("");
+		String cols[] = ((String)value).split(",");
+//		System.out.print(rowNum++ + ": ");
+//		for (String col: cols)
+//			System.out.print(col + " | ");
+//		System.out.println("");
 		
 		String flightID = cols[1];
 		String passengerID = cols[0];

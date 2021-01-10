@@ -84,15 +84,15 @@ public class FlightsFlowAnalyser {
 		}
 		
 		// Assign each split file to a mapper instance to run concurrently
+		ArrayList<String> inFiles = new ArrayList<String>();
 		for (File sf: splitFiles) {
 			System.out.println("Filename:" + sf.getName());
+			inFiles.add(sf.getName());
 		}
 		
-		
-		String[] inFiles = new String[1];
-		inFiles[0] = splitFiles.get(0).getName();
-		
+		//-------------------------------------------------------------------
 		// Create a job for objective (a)
+		//-------------------------------------------------------------------
 		Config config2 = new Config(inFiles, AirportFlightMapper.class, AirportFlightReducer.class);
 		// add the airport data into the config
 
@@ -104,8 +104,9 @@ public class FlightsFlowAnalyser {
 			e.printStackTrace();
 		}
 		
+		//-------------------------------------------------------------------
 		// Create a job for objective (b): List of flights
-		
+		//-------------------------------------------------------------------
 		Config config = new Config(inFiles, FlightPassengerMapper.class, FlightPassengerReducer.class);
 		Job jobFlightPassengers = new Job(config);
 		try {
@@ -115,8 +116,34 @@ public class FlightsFlowAnalyser {
 			e.printStackTrace();
 		}
 
-		
+		// Output for the objective (a)
+        Iterator iterator2 = jobAirportFlights.getResult().entrySet().iterator();
+        PrintWriter writer = null;
+		try {
+			writer = new PrintWriter(new File("airports.csv"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        
+		System.out.println("=================================================================");
+		System.out.println("Objective (a): Airport, Flight Count");
+		System.out.println("=================================================================");
+        while(iterator2.hasNext()) {
+            Map.Entry<Object, Integer> entry = (Map.Entry) iterator2.next();
+            int intFlightCount = entry.getValue().intValue();
+            System.out.println("Airport: " + entry.getKey() + " (" + intFlightCount + " flights)");
+            // Write to the output file
+            writer.println(entry.getKey() + "," + intFlightCount);
+        } 
+        
+        writer.close();
+        
+        
 		// Output for the objective (b) & (c)
+		System.out.println("=================================================================");
+		System.out.println("Objective (b) & (c) : Flight, Passengers");
+		System.out.println("=================================================================");
         Iterator iterator = jobFlightPassengers.getResult().entrySet().iterator();
         while(iterator.hasNext()) {
             Map.Entry<Object, List<Object>> entry = (Map.Entry) iterator.next();
@@ -134,30 +161,11 @@ public class FlightsFlowAnalyser {
             System.out.println("-------------------------------------------------------");
         } 
         
-		// Output for the objective (a)
-        Iterator iterator2 = jobAirportFlights.getResult().entrySet().iterator();
-        PrintWriter writer = null;
-		try {
-			writer = new PrintWriter(new File("airports.csv"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        
-        while(iterator2.hasNext()) {
-            Map.Entry<Object, Integer> entry = (Map.Entry) iterator2.next();
-            int intFlightCount = entry.getValue().intValue();
-            System.out.println("Airport: " + entry.getKey() + " (" + intFlightCount + " flights)");
-            // Write to the output file
-            writer.println(entry.getKey() + "," + intFlightCount);
-        } 
-        
-        writer.close();
-        
-        
+		//-------------------------------------------------------------------
 		// Create a job for objective (a) Unused airports
-		String[] inFiles2 = new String[1];
-		inFiles2[0] = "airports.csv";
+		//-------------------------------------------------------------------
+		ArrayList<String> inFiles2 = new ArrayList<String>();
+		inFiles2.add("airports.csv");
 		Config config3 = new Config(inFiles2, UnusedAirportMapper.class, UnusedAirportReducer.class);
 		Job jobUnusedAirports = new Job(config3);
 		jobUnusedAirports.addRefData("AirportInfo", ((HashMap)dictAirportInfo).clone());
@@ -168,6 +176,9 @@ public class FlightsFlowAnalyser {
 			e.printStackTrace();
 		}
 		// Output for the objective (a) Unused airports
+		System.out.println("=================================================================");
+		System.out.println("Objective (a): Unused Airports");
+		System.out.println("=================================================================");
         Iterator iterator4 = jobUnusedAirports.getResult().entrySet().iterator();
         while(iterator4.hasNext()) {
             Map.Entry<Object, Set> entry = (Map.Entry) iterator4.next();
@@ -179,7 +190,9 @@ public class FlightsFlowAnalyser {
             System.out.println("-------------------------------------------------------");
         } 
 		
+		//-------------------------------------------------------------------
 		// Create a job for objective(d) Passenger having earned the highest air miles
+		//-------------------------------------------------------------------
 		Config config4 = new Config(inFiles, PassengerMileageMapper.class, PassengerMileageReducer.class);
 		Job jobPassengerMileage = new Job(config4);
 		jobPassengerMileage.addRefData("AirportInfo", ((HashMap) dictAirportInfo).clone());
@@ -201,12 +214,13 @@ public class FlightsFlowAnalyser {
                 return o2.getValue().compareTo(o1.getValue());
             }
         });
-
+		System.out.println("=================================================================");
+		System.out.println("Objective (d): Passenger Mileage");
+		System.out.println("=================================================================");
         for (Entry<String, Double> entry : list) {
             System.out.println(entry.getKey() + ": " + entry.getValue());
 
         }
-        System.out.println("_____________________");
         
 		// Wait for all mappers to complete their tasks
 		

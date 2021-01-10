@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -23,21 +24,21 @@ public class Config {
     private Class mapper, reducer;
 
     // Constructor
-    public Config(String[] inFiles, Class mapper, Class reducer) {
+    public Config(List<String> inFiles, Class mapper, Class reducer) {
         init(inFiles);
         this.mapper = mapper;
         this.reducer = reducer;
     }
 
     // Initialise a job using the provided arguments
-    private void init(String[] inFiles) {
-        if(inFiles == null || inFiles.length == 0) {
-            System.out.println("Usage: java MapReduce <files>\n\tProcess a set of files listed by <files> using a trivial MapReduce implementation.");
-            System.exit(1);
-        }
-        this.files = new File[inFiles.length];
-        for(int i=0; i<inFiles.length; i++)
-            this.files[i] = new File(inFiles[i]);
+    private void init(List<String> inFiles) {
+  //      if(inFiles == null || inFiles.length == 0) {
+  //          System.out.println("Usage: java MapReduce <files>\n\tProcess a set of files listed by <files> using a trivial MapReduce implementation.");
+  //          System.exit(1);
+  //      }
+        this.files = new File[inFiles.size()];
+        for(int i=0; i<inFiles.size(); i++)
+            this.files[i] = new File(inFiles.get(i));
     }
 
     // Generic file reader returning an iterator cycling through each line of the specified file
@@ -64,8 +65,9 @@ public class Config {
     }
 
     // Using reflection get an instance of the reducer operating on a chunk of the intermediate results
-    protected Reducer getReducerInstance(Map results) throws Exception {
+    protected Reducer getReducerInstance(Object key, CopyOnWriteArrayList results) throws Exception {
         Reducer reducer = (Reducer) this.reducer.getConstructor().newInstance();
+        reducer.setKey(key);
         reducer.setRecords(results);
         return reducer;
     }

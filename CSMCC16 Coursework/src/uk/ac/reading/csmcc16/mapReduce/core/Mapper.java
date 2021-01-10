@@ -7,12 +7,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-public abstract class Mapper {
+public abstract class Mapper implements Runnable {
 	
 	File inputFile;
 	
-	Map<String, Object> mapKeyValuePairs = new HashMap<String, Object>();
+//	static ConcurrentHashMap<String, Object> mapKeyValuePairs = new ConcurrentHashMap<String, Object>();
+	ConcurrentHashMap<Object, Object> mapKeyValuePairs;
 	Map<String, Object> mapRefData;
 	
     // Constructor
@@ -35,17 +38,20 @@ public abstract class Mapper {
     }
 
     // Abstract map function to be overwritten by objective-specific class
-    public abstract void map(String value);
+    public abstract void map(Object value);
 
     // Adds values to a list determined by a key
     // Map <KEY, List<VALUES>>
     // Shuffle function is performed here
-    public void emitIntermediate(String key, Object value) {
+    public void emitIntermediate(Object key, Object value) {
+//    	String threadName = Thread.currentThread().getName();
+    	
+ //   	System.out.println("[" + threadName + "] called Mapper.emitIntermediate()");
 		if (mapKeyValuePairs.containsKey(key)) {
-			ArrayList<Object>valArray = (ArrayList)mapKeyValuePairs.get(key);
+			CopyOnWriteArrayList<Object>valArray = (CopyOnWriteArrayList)mapKeyValuePairs.get(key);
 			valArray.add(value);
 		} else {
-			ArrayList<Object>valArray = new ArrayList<Object>();
+			CopyOnWriteArrayList<Object>valArray = new CopyOnWriteArrayList<Object>();
 			valArray.add(value);				
 			mapKeyValuePairs.put(key, (Object)valArray);
 		}
@@ -55,12 +61,16 @@ public abstract class Mapper {
 		this.inputFile = file;
 	}
 	
-	public Map getKeyValuePairs() {
+	public ConcurrentHashMap getKeyValuePairs() {
 		return this.mapKeyValuePairs;
 	}
 	
 	public void setRefData(Map dataSets) {
 		mapRefData = dataSets;
+	}
+	
+	public void setKeyValuePairs(ConcurrentHashMap mapKeyValuePairs) {
+		this.mapKeyValuePairs = mapKeyValuePairs;
 	}
 	
 	public Map getRefData() {
