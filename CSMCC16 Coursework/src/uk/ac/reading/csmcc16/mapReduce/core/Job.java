@@ -1,6 +1,5 @@
 package uk.ac.reading.csmcc16.mapReduce.core;
 
-import java.awt.List;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,12 +18,14 @@ public class Job {
     // Global object to store intermediate and final results
     // TODO: Move the map object from main to here
     protected  ConcurrentHashMap mapKeyValuePairs = new ConcurrentHashMap();
-    protected  ConcurrentHashMap mapJobResult = new ConcurrentHashMap();
+    protected  ConcurrentHashMap<String, Object> mapJobResults = new ConcurrentHashMap();
+    
     protected Map mapRefData = new HashMap();
 
     // Constructor
     public Job(Config config) {
         this.config = config; 
+        mapJobResults.put("default", new ConcurrentHashMap());
     }
 
     // Run the job given the provided configuration
@@ -86,7 +87,7 @@ public class Job {
             reducer = config.getReducerInstance(entry.getKey(), entry.getValue());
          //   reducer = config.getReducerInstance(mapJobResult));
             reducer.setRefData(mapRefData);
-            reducer.setResult(mapJobResult);
+            reducer.setResult(mapJobResults);
             Thread thread = new Thread(reducer, "Thread " + i++);
             thread.start();
             threadList.add(thread);
@@ -106,11 +107,19 @@ public class Job {
 //        mapJobResult = reducer.getResult();
     }
     
-    public Map getResult() {
-    	return mapJobResult;
+    public Map getJobResult() {
+    	return (Map)mapJobResults.get("default");
+    }
+    
+    public Map getJobResult(String key) {
+    	return (Map)mapJobResults.get(key);
     }
     
     public void addRefData(String key, Object values) {  	
     	mapRefData.put(key, values);
+    }
+    
+    public void addJobResultBucket(String key) {	
+        mapJobResults.put(key, new ConcurrentHashMap());
     }
 }

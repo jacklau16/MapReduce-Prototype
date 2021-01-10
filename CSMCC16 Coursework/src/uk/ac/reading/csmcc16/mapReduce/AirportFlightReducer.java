@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.reading.csmcc16.FlightTripInfo;
 import uk.ac.reading.csmcc16.mapReduce.core.*;
 
 public class AirportFlightReducer extends Reducer {
@@ -18,11 +19,12 @@ public class AirportFlightReducer extends Reducer {
 		Set<String> setFlights = new HashSet<String>();
 		
 		for (int i=0; i<values.size();i++) {
-			String flightID = (String)values.get(i);
+			FlightTripInfo objFTI = (FlightTripInfo)values.get(i);
+			String flightID = objFTI.getFlightID();
 			setFlights.add(flightID);
+			this.emit("UsedAirports", objFTI, objFTI);
 		}	
-
-		this.emit(key, (Object)Integer.valueOf(setFlights.size()));
+		this.emit("FlightCount", key, (Object)Integer.valueOf(setFlights.size()));
 	}
 
 }

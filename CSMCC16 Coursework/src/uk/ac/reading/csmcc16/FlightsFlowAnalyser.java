@@ -6,7 +6,6 @@ package uk.ac.reading.csmcc16;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -19,7 +18,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -98,6 +96,8 @@ public class FlightsFlowAnalyser {
 
 		Job jobAirportFlights = new Job(config2);
 		try {
+			jobAirportFlights.addJobResultBucket("UsedAirports");
+			jobAirportFlights.addJobResultBucket("FlightCount");			
 			jobAirportFlights.run();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -117,7 +117,19 @@ public class FlightsFlowAnalyser {
 		}
 
 		// Output for the objective (a)
-        Iterator iterator2 = jobAirportFlights.getResult().entrySet().iterator();
+        Iterator iteratorA1 = jobAirportFlights.getJobResult("FlightCount").entrySet().iterator();
+        
+		System.out.println("=================================================================");
+		System.out.println("Objective (a): Airport, Flight Count");
+		System.out.println("=================================================================");
+        while(iteratorA1.hasNext()) {
+            Map.Entry<Object, Integer> entry = (Map.Entry) iteratorA1.next();
+            int intFlightCount = entry.getValue().intValue();
+            System.out.println("Airport: " + entry.getKey() + " (" + intFlightCount + " flights)");
+        } 
+
+        Iterator iteratorA2 = jobAirportFlights.getJobResult("UsedAirports").entrySet().iterator();
+        
         PrintWriter writer = null;
 		try {
 			writer = new PrintWriter(new File("airports.csv"));
@@ -125,18 +137,13 @@ public class FlightsFlowAnalyser {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-        
-		System.out.println("=================================================================");
-		System.out.println("Objective (a): Airport, Flight Count");
-		System.out.println("=================================================================");
-        while(iterator2.hasNext()) {
-            Map.Entry<Object, Integer> entry = (Map.Entry) iterator2.next();
-            int intFlightCount = entry.getValue().intValue();
-            System.out.println("Airport: " + entry.getKey() + " (" + intFlightCount + " flights)");
-            // Write to the output file
-            writer.println(entry.getKey() + "," + intFlightCount);
-        } 
-        
+	    while(iteratorA2.hasNext()) {
+	            Map.Entry<Object, FlightTripInfo> entry = (Map.Entry) iteratorA2.next();
+	            FlightTripInfo objFTI = entry.getValue();
+	            System.out.println("AirportFrom=" + objFTI.getAirportFrom() + ", AirportTo=" + objFTI.getAirportTo());
+	            // Write to the output file
+	            writer.println(objFTI.getAirportFrom() + "," + objFTI.getAirportTo());
+	        } 
         writer.close();
         
         
@@ -144,7 +151,7 @@ public class FlightsFlowAnalyser {
 		System.out.println("=================================================================");
 		System.out.println("Objective (b) & (c) : Flight, Passengers");
 		System.out.println("=================================================================");
-        Iterator iterator = jobFlightPassengers.getResult().entrySet().iterator();
+        Iterator iterator = jobFlightPassengers.getJobResult().entrySet().iterator();
         while(iterator.hasNext()) {
             Map.Entry<Object, List<Object>> entry = (Map.Entry) iterator.next();
             FlightPassengerInfo objFP = (FlightPassengerInfo)entry.getValue();
@@ -179,7 +186,7 @@ public class FlightsFlowAnalyser {
 		System.out.println("=================================================================");
 		System.out.println("Objective (a): Unused Airports");
 		System.out.println("=================================================================");
-        Iterator iterator4 = jobUnusedAirports.getResult().entrySet().iterator();
+        Iterator iterator4 = jobUnusedAirports.getJobResult().entrySet().iterator();
         while(iterator4.hasNext()) {
             Map.Entry<Object, Set> entry = (Map.Entry) iterator4.next();
             Iterator airportNames = entry.getValue().iterator();
@@ -206,7 +213,7 @@ public class FlightsFlowAnalyser {
 		// Output for the objective (d)
 		
 		//Sort the passenger records by their total mileage in descending order 
-        Set<Entry<String, Double>> set = jobPassengerMileage.getResult().entrySet();
+        Set<Entry<String, Double>> set = jobPassengerMileage.getJobResult().entrySet();
         List<Entry<String, Double>> list = new ArrayList<Entry<String, Double>>(set);
         Collections.sort(list, new Comparator<Map.Entry<String, Double>>() {
             public int compare(Map.Entry<String, Double> o1,

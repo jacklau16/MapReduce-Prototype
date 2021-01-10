@@ -11,8 +11,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public abstract class Reducer implements Runnable {
 	
 	Object oKey;
-	CopyOnWriteArrayList lstValues;
-	ConcurrentHashMap mapResult;// = new ConcurrentHashMap();
+	CopyOnWriteArrayList<Object> lstValues;
+	ConcurrentHashMap<String, Object> mapResult;// = new ConcurrentHashMap();
 	Map<String, Object> mapRefData;
 	
     // constructor
@@ -30,15 +30,19 @@ public abstract class Reducer implements Runnable {
     }
 
     // Abstract reduce function to the overwritten by objective-specific class
-    public abstract void reduce(Object key, List values);
+    public abstract void reduce(Object key, List<Object> values);
 
     // Simply replace the intermediate and final result for each key
     // Map <KEY, List<VALUES>> -> Map <KEY, VALUE>
     public void emit(Object key, Object value) {
-    	mapResult.put(key, value);
+    	emit("default", key, value);
+    }
+    
+    public void emit(String outputName, Object key, Object value) {
+    	((ConcurrentHashMap<Object, Object>) mapResult.get(outputName)).put(key, value);
     }
 
-	protected void setRecords(CopyOnWriteArrayList resultsFromMapper) {
+	protected void setRecords(CopyOnWriteArrayList<Object> resultsFromMapper) {
 		lstValues = resultsFromMapper;
 	}
 	
@@ -54,12 +58,13 @@ public abstract class Reducer implements Runnable {
     	mapRefData = dataSets;
     }
 	
-	public void setResult(ConcurrentHashMap mapResult) {
+	public void setResult(ConcurrentHashMap<String, Object> mapResult) {
 		this.mapResult = mapResult;
 	}
 	
 	public Map getRefData() {
     	return mapRefData;
 	}
+	
 }
 
