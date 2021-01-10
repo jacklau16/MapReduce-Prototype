@@ -1,4 +1,4 @@
-package uk.ac.reading.compsci.csmcc16;
+package uk.ac.reading.csmcc16;
 
 public class PassengerTripInfo {
 	

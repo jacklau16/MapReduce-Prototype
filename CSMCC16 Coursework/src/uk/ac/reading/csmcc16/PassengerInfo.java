@@ -1,6 +1,9 @@
-package uk.ac.reading.compsci.csmcc16;
+package uk.ac.reading.csmcc16;
 
-public class FlightPassengerInfo {
+import java.util.ArrayList;
+import java.util.List;
+
+public class PassengerInfo {
 	
 	String _flightID;
 	String _passengerID;
@@ -20,8 +23,8 @@ public class FlightPassengerInfo {
 	public String getPassengerID() {
 		return _passengerID;
 	}
-
-	public void setPassengerID(String passengerID) {
+	
+	public void getPassengerID(String passengerID) {
 		this._passengerID = passengerID;
 	}
 
@@ -58,12 +61,19 @@ public class FlightPassengerInfo {
 	}
 
 	
-	public FlightPassengerInfo(String flightID, String passengerID, String airportFrom, String airportTo, long depTime, long totFlightTime) {
-		this._flightID = flightID;
+	public PassengerInfo(String passengerID, String flightID, String airportFrom, String airportTo, long depTime, long totFlightTime) {
 		this._passengerID = passengerID;
+		this._flightID = flightID;
 		this._airportFrom = airportFrom;
 		this._airportTo = airportTo;
 		this._depTime = depTime;
 		this._totFlightTime = totFlightTime;
+	}
+	
+	public PassengerInfo(String passengerID, String flightID, String airportFrom, String airportTo) {
+		this._passengerID = passengerID;
+		this._flightID = flightID;
+		this._airportFrom = airportFrom;
+		this._airportTo = airportTo;
 	}
 }
