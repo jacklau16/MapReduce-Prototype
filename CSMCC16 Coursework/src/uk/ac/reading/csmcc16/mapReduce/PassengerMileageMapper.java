@@ -1,6 +1,6 @@
 package uk.ac.reading.csmcc16.mapReduce;
 
-import uk.ac.reading.csmcc16.PassengerInfo;
+import uk.ac.reading.csmcc16.PassengerTripInfo;
 import uk.ac.reading.csmcc16.mapReduce.core.*;
 
 public class PassengerMileageMapper extends Mapper {
@@ -18,10 +18,10 @@ public class PassengerMileageMapper extends Mapper {
 		String flightID = cols[1];
 		String fromAirportCode = cols[2];
 		String toAirportCode = cols[3];
-		Long departureTime = Long.parseLong(cols[4]);
-		Long totFlightTime = Long.parseLong(cols[5]);
+//		Long departureTime = Long.parseLong(cols[4]);
+//		Long totFlightTime = Long.parseLong(cols[5]);
 		
-		PassengerInfo valueObj = new PassengerInfo(passengerID, flightID, fromAirportCode, toAirportCode);
+		PassengerTripInfo valueObj = new PassengerTripInfo(passengerID, flightID, fromAirportCode, toAirportCode);
 		
 		emitIntermediate(passengerID, valueObj);
 		

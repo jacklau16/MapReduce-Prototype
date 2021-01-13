@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import uk.ac.reading.csmcc16.FlightPassengerInfo;
-import uk.ac.reading.csmcc16.PassengerInfo;
+import uk.ac.reading.csmcc16.PassengerTripInfo;
 import uk.ac.reading.csmcc16.mapReduce.core.*;
 
 public class FlightPassengerReducer extends Reducer {
@@ -20,7 +20,7 @@ public class FlightPassengerReducer extends Reducer {
 		// Create the output object
 		FlightPassengerInfo objFP = null;		
 		for (int i=0; i<values.size();i++) {
-			PassengerInfo objPD = (PassengerInfo)values.get(i);
+			PassengerTripInfo objPD = (PassengerTripInfo)values.get(i);
 			// TODO: will there be duplicated passenger?
 			passengerCount++;
 			String flightID = (String)key;

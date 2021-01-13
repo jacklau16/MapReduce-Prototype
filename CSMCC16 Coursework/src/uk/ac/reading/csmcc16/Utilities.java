@@ -124,7 +124,7 @@ public class Utilities {
 					// TODO add error logging
 				} catch (Exception e) {
 					// skip this record
-					System.err.println("Error: record skipped.");
+					System.err.println("Load Airport Data: Error in parsing a record, it is skipped.");
 				}
 		    }
 		} catch (FileNotFoundException e) {

@@ -19,9 +19,9 @@ public class PassengerMileageReducer extends Reducer {
 		
 		Map mapAirportInfo = (Map) this.getRefData().get("AirportInfo");
 		// Create the output object
-		FlightPassengerInfo objFP = null;		
+		FlightPassengerInfo objFP = null;
 		for (int i=0; i<values.size();i++) {
-			PassengerInfo objPD = (PassengerInfo)values.get(i);
+			PassengerTripInfo objPD = (PassengerTripInfo)values.get(i);
 			// TODO: will there be duplicated passenger?
 			String passengerID = (String)key;
 			String flightID = objPD.getFlightID();
@@ -34,6 +34,8 @@ public class PassengerMileageReducer extends Reducer {
 			double dTraveledDistance = Utilities.getTraveledDistance(objAirportFrom.getLatitude(), objAirportFrom.getLongitude(), 
 					objAirportTo.getLatitude(), objAirportTo.getLongitude());
 
+			objPD.setFlightMileage(dTraveledDistance);		
+			
 //			System.out.println(passengerID + "," +
 //					sAirportFrom + "," +
 //					sAirportTo + "," +
@@ -55,8 +57,8 @@ public class PassengerMileageReducer extends Reducer {
 			}
 */	
 		}
-		
-		this.emit(key, Double.valueOf(totTraveledDistance));
+		this.emit("FlightMileage", key, values);
+		this.emit("PassengerMileage", key, Double.valueOf(totTraveledDistance));
 	}
 
 }
