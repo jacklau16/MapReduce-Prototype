@@ -9,6 +9,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import uk.ac.reading.csmcc16.Logger;
+
 //TODO: Job class should be generic
 
 public class Job {
@@ -16,7 +18,6 @@ public class Job {
     private Config config;
 
     // Global object to store intermediate and final results
-    // TODO: Move the map object from main to here
     protected  ConcurrentHashMap mapKeyValuePairs = new ConcurrentHashMap();
     protected  ConcurrentHashMap<String, Object> mapJobResults = new ConcurrentHashMap();
     
@@ -30,23 +31,13 @@ public class Job {
 
     // Run the job given the provided configuration
     public void run() throws Exception {
-        // Initialise the map to store intermediate results
-        //map = new Map();
-        // Execute the map and reduce phases in sequence
-        
-        //TODO: pass the properties values to here
-        
-        //TODO: move file splitter to here
-        //TODO: Multi-threading in mapper
+
         map();
-        
- //       combine();
         
         reduce();
     }
 
-    // Map each provided file using an instance of the mapper specified by the job 
-    // configuration
+    // Map each provided file using an instance of the mapper specified by the job configuration
     private void map() throws Exception {
     	int i = 1;
     	Mapper mapper = null;
@@ -57,10 +48,10 @@ public class Job {
             mapper.setKeyValuePairs(mapKeyValuePairs);
             Thread thread = new Thread(mapper, "Thread " + i++);
             thread.start();
-            threadList.add(thread);
- //           mapper.run();         
+            threadList.add(thread);      
         }
-        System.out.println(mapper.getClass() + ": " + (i-1) + " threads created");
+        
+        Logger.getInstance().logMessage(mapper.getClass().getSimpleName() + ": " + (i-1) + (i>2?" threads created":" thread created"));
         
         // Wait for all threads to complete
         Iterator it = threadList.iterator();
@@ -69,7 +60,7 @@ public class Job {
         	thread.join();
         }
         mapKeyValuePairs = mapper.getKeyValuePairs();   
-        System.out.println(mapper.getClass() + ": all threads completed");
+        Logger.getInstance().logMessage(mapper.getClass().getSimpleName() + ": all threads completed");
     }
 
     // Reduce the intermediate results output by the map phase using an instance of 
@@ -85,17 +76,13 @@ public class Job {
             Map.Entry<Object, CopyOnWriteArrayList<Object>> entry = (Entry<Object, CopyOnWriteArrayList<Object>>) iterator.next();
             
             reducer = config.getReducerInstance(entry.getKey(), entry.getValue());
-         //   reducer = config.getReducerInstance(mapJobResult));
             reducer.setRefData(mapRefData);
             reducer.setResult(mapJobResults);
             Thread thread = new Thread(reducer, "Thread " + i++);
             thread.start();
             threadList.add(thread);
-            //reducer.run();          
-  //          reduce(entry.getKey(), entry.getValue());
         } 
-        
-        System.out.println(reducer.getClass() + ": " + (i-1) + " threads created");
+        Logger.getInstance().logMessage(reducer.getClass().getSimpleName() + ": " + (i-1) + (i>2?" threads created":" thread created"));
         
         // Wait for all threads to complete
         Iterator it = threadList.iterator();
@@ -103,8 +90,7 @@ public class Job {
         	Thread thread = (Thread) it.next();
         	thread.join();
         }
-        System.out.println(reducer.getClass() + ": all threads completed");
-//        mapJobResult = reducer.getResult();
+        Logger.getInstance().logMessage(reducer.getClass().getSimpleName() + ": all threads completed");
     }
     
     public Map getJobResult() {

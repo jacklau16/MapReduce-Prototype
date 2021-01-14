@@ -12,6 +12,7 @@ public class FlightPassengerInfo {
 	String _depTime;
 	String _arrTime;
 	String _flightTime;
+	double _flightMileage;
 	
 	public String getFlightID() {
 		return _flightID;
@@ -77,12 +78,21 @@ public class FlightPassengerInfo {
 		this._flightTime = flightTime;
 	}
 	
-	public FlightPassengerInfo(String flightID, String airportFrom, String airportTo, String depTime, String arrTime, String flightTime) {
+	public double getFlightMileage() {
+		return _flightMileage;
+	}
+
+	public void setFlightTime(double flightMileage) {
+		this._flightMileage = flightMileage;
+	}
+	
+	public FlightPassengerInfo(String flightID, String airportFrom, String airportTo, String depTime, String arrTime, String flightTime, double flightMileage) {
 		this._flightID = flightID;
 		this._airportFrom = airportFrom;
 		this._airportTo = airportTo;
 		this._depTime = depTime;
 		this._arrTime = arrTime;
 		this._flightTime = flightTime;
+		this._flightMileage = flightMileage;
 	}
 }

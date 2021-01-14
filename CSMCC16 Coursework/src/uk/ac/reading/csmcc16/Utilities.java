@@ -17,8 +17,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public class Utilities {
+import javafx.scene.Cursor;
+import javafx.scene.Scene;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableColumn;
+import javafx.scene.control.TreeTableView;
+import javafx.scene.text.Text;
 
+public class Utilities {
 
 	public static double getTraveledDistance(double latitudeFrom, double longitudeFrom, double latitudeTo, double longitudeTo) {
 		// Calculate the mileage of the trip using Haversine formula, then convert to nautical miles
@@ -124,7 +131,8 @@ public class Utilities {
 					// TODO add error logging
 				} catch (Exception e) {
 					// skip this record
-					System.err.println("Load Airport Data: Error in parsing a record, it is skipped.");
+					//System.err.println("Load Airport Data: Error in parsing a record, it is skipped.");
+					Logger.getInstance().logError("Load Airport Data: Error in parsing a record, it is skipped.");
 				}
 		    }
 		} catch (FileNotFoundException e) {
@@ -136,5 +144,113 @@ public class Utilities {
 		}		
 		
 		return dictAirportInfo;
+	}
+
+
+	public static void autoResizeTableViewColumns( TableView<?> table )
+	{
+	    //Set the right policy
+	    table.setColumnResizePolicy( TableView.UNCONSTRAINED_RESIZE_POLICY);
+	    table.getColumns().stream().forEach( (column) ->
+	    {
+	        //Minimal width = columnheader
+	        Text t = new Text( column.getText() );
+	        double max = t.getLayoutBounds().getWidth();
+	        for ( int i = 0; i < table.getItems().size(); i++ )
+	        {
+	            //cell must not be empty
+	            if ( column.getCellData( i ) != null )
+	            {
+	                t = new Text( column.getCellData( i ).toString() );
+	                double calcwidth = t.getLayoutBounds().getWidth();
+	                //remember new max-width
+	                if ( calcwidth > max )
+	                {
+	                    max = calcwidth;
+	                }
+	            }
+	        }
+	        //set the new max-width with some extra space
+	        column.setPrefWidth( max + 10.0d );
+	    } );
+	}
+
+
+	public static void autoResizeTreeTableViewColumns( TreeTableView<?> table ) {
+		//Set the right policy
+		table.setColumnResizePolicy( TreeTableView.UNCONSTRAINED_RESIZE_POLICY);
+
+		ArrayList lstTblCols = new ArrayList();
+
+		for (int i=0; i<table.getColumns().size();i++) {
+			lstTblCols.add(table.getColumns().get(i));
+			for (int j=0; j<table.getColumns().get(i).getColumns().size(); j++) {
+				lstTblCols.add(table.getColumns().get(i).getColumns().get(j));
+			}    	
+		}
+
+		for (int k=0; k<lstTblCols.size(); k++) {
+			//Minimal width = columnheader
+			TreeTableColumn column = (TreeTableColumn) lstTblCols.get(k);
+			Text t = new Text( column.getText() );
+			double max = t.getLayoutBounds().getWidth();
+			ArrayList<TreeItem> lstTreeItems = new ArrayList<TreeItem>();
+
+			for(TreeItem<?> child: table.getRoot().getChildren()){
+				lstTreeItems.add(child);
+				if(!child.getChildren().isEmpty()){
+					for(TreeItem<?> grandChild: child.getChildren()) {
+						lstTreeItems.add(grandChild);
+						if(!grandChild.getChildren().isEmpty()){
+							for(TreeItem<?> grandGrandChild: grandChild.getChildren())
+								lstTreeItems.add(grandGrandChild);
+						}
+					} 
+				} 
+			}
+
+			for ( int i = 0; i < lstTreeItems.size(); i++ )
+			{
+				//cell must not be empty
+				if ( column.getCellData( i ) != null )
+				{
+					t = new Text( column.getCellData( i ).toString() );
+					double calcwidth = t.getLayoutBounds().getWidth();
+					//remember new max-width
+					if ( calcwidth > max )
+					{
+						max = calcwidth;
+					}
+				}
+			}
+			//set the new max-width with some extra space
+			column.setPrefWidth( max + 10.0d );
+		}
+	}
+	
+	public static void setCursorWait(final Scene scene)
+	{
+	    Runnable r=new Runnable() {
+
+	        @Override
+	        public void run() {
+	             scene.setCursor(Cursor.WAIT);
+	        }
+	    };
+	    Thread t=new Thread(r);
+	    t.start();
+	}
+	
+	public static void setCursorDefault(final Scene scene)
+	{
+	        Runnable r=new Runnable() {
+
+	        @Override
+	        public void run() {
+	             scene.setCursor(Cursor.DEFAULT);
+	        }
+	    };
+	    Thread t=new Thread(r);
+	    t.start();
 	}
 }

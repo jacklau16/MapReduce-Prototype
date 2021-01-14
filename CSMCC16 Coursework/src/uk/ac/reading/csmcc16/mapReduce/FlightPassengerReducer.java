@@ -6,8 +6,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import uk.ac.reading.csmcc16.AirportInfo;
 import uk.ac.reading.csmcc16.FlightPassengerInfo;
 import uk.ac.reading.csmcc16.PassengerTripInfo;
+import uk.ac.reading.csmcc16.Utilities;
 import uk.ac.reading.csmcc16.mapReduce.core.*;
 
 public class FlightPassengerReducer extends Reducer {
@@ -18,7 +20,9 @@ public class FlightPassengerReducer extends Reducer {
 		int passengerCount = 0;
 //		System.out.println("[" + key + "]: " + values.size());
 		// Create the output object
-		FlightPassengerInfo objFP = null;		
+		FlightPassengerInfo objFP = null;	
+		Map mapAirportInfo = (Map) this.getRefData().get("AirportInfo");
+		double dTraveledDistance = 0.0;
 		for (int i=0; i<values.size();i++) {
 			PassengerTripInfo objPD = (PassengerTripInfo)values.get(i);
 			// TODO: will there be duplicated passenger?
@@ -30,15 +34,14 @@ public class FlightPassengerReducer extends Reducer {
 			String depTime =  new SimpleDateFormat("hh:mm:ss").format(new Date(objPD.getDepTime()*1000));
 			String arrTime =  new SimpleDateFormat("hh:mm:ss").format(new Date(objPD.getDepTime()*1000+objPD.getTotFlightTime()*60*1000));
 			String flightTime = new SimpleDateFormat("hh:mm:ss").format(new Date(objPD.getTotFlightTime()*60*1000));
-//			System.out.println(passengerID + "," +
-//					airportFrom + "," +
-//					airportTo + "," +
-//					depTime + "," +
-//					arrTime
-//					);
+			AirportInfo objAirportFrom = (AirportInfo) mapAirportInfo.get(airportFrom);
+			AirportInfo objAirportTo = (AirportInfo) mapAirportInfo.get(airportTo);
+			
+			dTraveledDistance = Utilities.getTraveledDistance(objAirportFrom.getLatitude(), objAirportFrom.getLongitude(), 
+					objAirportTo.getLatitude(), objAirportTo.getLongitude());
 			if (i==0)
-				 objFP = new FlightPassengerInfo(flightID, airportFrom, airportTo, depTime, arrTime, flightTime);	
-			objFP.addPassenger(passengerID);
+				 objFP = new FlightPassengerInfo(flightID, airportFrom, airportTo, depTime, arrTime, flightTime, dTraveledDistance);	
+			objFP.addPassenger(passengerID);			
 		}
 		
 		this.emit(key, objFP);

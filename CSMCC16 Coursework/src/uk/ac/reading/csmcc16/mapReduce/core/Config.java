@@ -22,12 +22,15 @@ public class Config {
 
     // Classes to implement job-specific map and reduce functions
     private Class mapper, reducer;
+    
+    private static boolean hasHeader;
 
     // Constructor
-    public Config(List<String> inFiles, Class mapper, Class reducer) {
+    public Config(List<String> inFiles, Class mapper, Class reducer, boolean hasHeader) {
         init(inFiles);
         this.mapper = mapper;
         this.reducer = reducer;
+        this.hasHeader = hasHeader;
     }
 
     // Initialise a job using the provided arguments
@@ -46,6 +49,8 @@ public class Config {
         List record = new ArrayList();
         BufferedReader br = new BufferedReader(new FileReader(file));
         String line;
+        if (hasHeader) // skip the header line if exists
+        	br.readLine();
         while((line = br.readLine()) != null)
             record.add(line);
         br.close();

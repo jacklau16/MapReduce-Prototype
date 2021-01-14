@@ -1,14 +1,14 @@
 package uk.ac.reading.csmcc16;
 
-public class DisplayPassengerMileage {
+public class DisplayPassengerMileageInfo {
 	String passengerID;
-	Double totMileage;
+	String totMileage;
 	String flightID;
 	String airportFromCode;
 	String airportFromName;
 	String airportToCode;
 	String airportToName;
-	Double flightMileage;
+	String flightMileage;
 	
 	public String getPassengerID() {
 		return passengerID;
@@ -16,10 +16,10 @@ public class DisplayPassengerMileage {
 	public void setPassengerID(String passengerID) {
 		this.passengerID = passengerID;
 	}
-	public Double getTotMileage() {
+	public String getTotMileage() {
 		return totMileage;
 	}
-	public void setTotMileage(Double totMileage) {
+	public void setTotMileage(String totMileage) {
 		this.totMileage = totMileage;
 	}
 	public String getFlightID() {
@@ -52,10 +52,10 @@ public class DisplayPassengerMileage {
 	public void setAirportToName(String airportToName) {
 		this.airportToName = airportToName;
 	}
-	public Double getFlightMileage() {
+	public String getFlightMileage() {
 		return flightMileage;
 	}
-	public void setFlightMileage(Double flightMileage) {
+	public void setFlightMileage(String flightMileage) {
 		this.flightMileage = flightMileage;
 	}
 }

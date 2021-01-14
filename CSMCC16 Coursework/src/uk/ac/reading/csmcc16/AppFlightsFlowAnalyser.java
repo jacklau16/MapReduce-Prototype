@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +32,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javafx.application.Application;
 import javafx.application.ConditionalFeature;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -38,6 +42,8 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Callback;
+import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.Scene;
@@ -50,8 +56,11 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TabPane.TabClosingPolicy;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
@@ -68,11 +77,14 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Box;
 import javafx.scene.shape.CullFace;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.scene.transform.Rotate;
 
 import uk.ac.reading.csmcc16.mapReduce.*;
@@ -84,7 +96,7 @@ import uk.ac.reading.csmcc16.mapReduce.core.*;
  * @author jacklau
  *
  */
-public class FlightsFlowAnalyser extends Application {
+public class AppFlightsFlowAnalyser extends Application {
 
 	static Properties configProps;
 	static String propFileName = "csmcc16.properties";
@@ -93,49 +105,71 @@ public class FlightsFlowAnalyser extends Application {
 	// JavaFX objects
 	TextField txtFldAirportDataFile;
 	TextField txtFldPassengerDataFile;
-//	TableView tblVwAirportsAnalysis;
-	static TableView tblVwAirportFlights;// = new TableView();
-	static TableView tblVwUnusedAirports;// = new TableView();
+	static TableView tblVwAirportFlights;
+	static TableView tblVwUnusedAirports;
 	static TableView tblVwFlightPassengers;
 	static TreeTableView trTblVwFlightPassengers;
 	static TreeTableView trTblVwPassengerMileage;
 	TabPane tbPnMain;
-	Stage stgPrimaryStage;
+	static Stage stgPrimaryStage;
+
 	
+	// Starting point of the application
+	public static void main(String[] args) {
+	
+		System.out.println("AppFlightsFlowAnalyser");
+		System.out.println("java.runtime.version: " + System.getProperty("java.runtime.version", "(undefined)"));
+		System.out.println("javafx.version: " + System.getProperty("javafx.version", "(undefined)"));
+		
+		// Load the system properties from file
+		try {
+			configProps = Utilities.loadProperties(propFileName);
+		} catch (Exception e) {
+			System.err.println("Exception in loading properties file: " + e);			
+			return;
+		}
+		
+		// JavaFX will then call start(Stage) in this class		
+		launch(args);
+	
+	}
+
+	// JavaFX GUI starting pointing
 	@Override
 	public void start(Stage primaryStage) {
 		try {						
 			stgPrimaryStage = primaryStage;
 
-			// Create a tab control and all 4 tabs to it
+			// Create a TabPane control and add all tab pages to it
 			tbPnMain = new TabPane();
 			tbPnMain.setTabClosingPolicy(TabClosingPolicy.UNAVAILABLE);
 			tbPnMain.getTabs().add(new Tab("Start", createStartVBox()));
 			tbPnMain.getTabs().add(new Tab("Airports Analysis", createAirportsAnalysisGridPane()));
 			tbPnMain.getTabs().add(new Tab("Flights Analysis", createFlightsAnalysisVBox()));
 			tbPnMain.getTabs().add(new Tab("Passenger Analysis", createPassengersAnalysisVBox()));
-		
-			primaryStage.setScene(new Scene(new VBox(tbPnMain), 800, 600));
-			primaryStage.setTitle("Passenger Data Analysis (MapReduce Prototype)");
-			primaryStage.show();
+			tbPnMain.getTabs().add(new Tab("Log Messages", createLoggingVBox()));
 
+			primaryStage.setScene(new Scene(new VBox(tbPnMain), 800, 600));
+			primaryStage.setTitle("Flights Flow Analyser (MapReduce Prototype)");
+			primaryStage.show();
+			
 		} catch(Exception e) {
-			e.printStackTrace();
+			System.err.println("Exception in starting the JavaFX GUI: " + e);	
 		}
 	}
 	
 	public VBox createStartVBox() {
 		
 	    Image imgChecked = new Image(getClass().getClassLoader().getResourceAsStream("green_check.png"));
-	    ImageView ivGreenCheck1 = new ImageView(imgChecked);
-	    ivGreenCheck1.setFitHeight(30);
-	    ivGreenCheck1.setFitWidth(30);
-	    ivGreenCheck1.setVisible(false);
+	    ImageView imgVwGreenCheck1 = new ImageView(imgChecked);
+	    imgVwGreenCheck1.setFitHeight(30);
+	    imgVwGreenCheck1.setFitWidth(30);
+	    imgVwGreenCheck1.setVisible(false);
 	    
-	    ImageView ivGreenCheck2 = new ImageView(imgChecked);
-	    ivGreenCheck2.setFitHeight(30);
-	    ivGreenCheck2.setFitWidth(30);
-	    ivGreenCheck2.setVisible(false);
+	    ImageView imgVwGreenCheck2 = new ImageView(imgChecked);
+	    imgVwGreenCheck2.setFitHeight(30);
+	    imgVwGreenCheck2.setFitWidth(30);
+	    imgVwGreenCheck2.setVisible(false);
 	    
 		FileChooser fileChooser = new FileChooser();
 	    TextField textField1 = new TextField();
@@ -171,10 +205,7 @@ public class FlightsFlowAnalyser extends Application {
 			if (selectedFile != null) {
 				textField1.setText(selectedFile.getName());
 				txtFldAirportDataFile.setText(selectedFile.getAbsolutePath());
-//				Alert a = new Alert(AlertType.INFORMATION);
-//				a.setContentText(txtFldAirportDataFile.getText());
-//				a.show();
-			    ivGreenCheck1.setVisible(true);
+			    imgVwGreenCheck1.setVisible(true);
 				if (textField1.getText().isBlank() || textField2.getText().isBlank()) {
 					button3.setDisable(true);
 				} else {
@@ -189,10 +220,7 @@ public class FlightsFlowAnalyser extends Application {
 			if (selectedFile != null) {
 				textField2.setText(selectedFile.getName());
 				txtFldPassengerDataFile.setText(selectedFile.getAbsolutePath());
-//				Alert a = new Alert(AlertType.INFORMATION);
-//				a.setContentText(txtFldPassengerDataFile.getText());
-//				a.show();
-			    ivGreenCheck2.setVisible(true);
+			    imgVwGreenCheck2.setVisible(true);
 				if (textField1.getText().isBlank() || textField2.getText().isBlank()) {
 					button3.setDisable(true);
 				} else {
@@ -207,27 +235,23 @@ public class FlightsFlowAnalyser extends Application {
 				a.setContentText("Please select the files for both Step 1 and Step 2.");
 	            a.show();
 			} else {
-//				Alert a = new Alert(AlertType.INFORMATION);
-//				a.setContentText("Ready to go!");
-//				a.show();
-//				
+		
 				// Clear the result if any
 				tblVwAirportFlights.getItems().clear();
 				tblVwUnusedAirports.getItems().clear();
 				trTblVwPassengerMileage.setRoot(null);
-				//tableView.getItems().clear();
-				//treeTableView.setRoot(null);
 				
-				// Perform MapReduce stuff
-				buttonStartClicked(txtFldAirportDataFile.getText(), txtFldPassengerDataFile.getText());
-				// Display the first result tab
+				// Kick-off MapReduce Jobs
+				startMapReduceJobs(txtFldAirportDataFile.getText(), txtFldPassengerDataFile.getText());
+				
+				// Switch to 1st result tab page
 				tbPnMain.getSelectionModel().select(1);
 			}
 		});
 
-		HBox hbox1 = new HBox(10, textField1, ivGreenCheck1);
+		HBox hbox1 = new HBox(10, textField1, imgVwGreenCheck1);
 		hbox1.setAlignment(Pos.CENTER);
-		HBox hbox2 = new HBox(10, textField2, ivGreenCheck2);
+		HBox hbox2 = new HBox(10, textField2, imgVwGreenCheck2);
 		hbox2.setAlignment(Pos.CENTER);
 		
 		VBox vbox3 = new VBox(20, button1, hbox1, separator1, button2, hbox2, separator2, button3);
@@ -238,6 +262,7 @@ public class FlightsFlowAnalyser extends Application {
 	}
 	
 	public GridPane createAirportsAnalysisGridPane() {
+
 		tblVwAirportFlights = new TableView();
 		tblVwUnusedAirports = new TableView();
 	
@@ -245,28 +270,28 @@ public class FlightsFlowAnalyser extends Application {
 		tblVwAirportFlights.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
 		tblVwUnusedAirports.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
 		
-		// Use Map to add data
-		
+		// Use Map to add data		
 		TableColumn<Map, String> column_a1 = new TableColumn<>("Airport Code");
 		column_a1.setCellValueFactory(new MapValueFactory<>("airportCode"));
+		column_a1.setStyle("-fx-alignment: CENTER;");
 
 		TableColumn<Map, String> column_a2 = new TableColumn<>("Airport Name");
 		column_a2.setCellValueFactory(new MapValueFactory<>("airportName"));
 
 		TableColumn<Map, String> column_a3 = new TableColumn<>("Number of Flights");
 		column_a3.setCellValueFactory(new MapValueFactory<>("numOfFlights"));
+		column_a3.setStyle("-fx-alignment: CENTER;");
 		
 		tblVwAirportFlights.getColumns().add(column_a1);
 		tblVwAirportFlights.getColumns().add(column_a2);
-		tblVwAirportFlights.getColumns().add(column_a3);
-		
-		//tblVwAirportFlights.setPlaceholder(new Label("No rows to display"));
+		tblVwAirportFlights.getColumns().add(column_a3);		
 		tblVwAirportFlights.setMinWidth(400);
 
 
 		TableColumn<Map, String> column_b1 = new TableColumn<>("Airport Code");
 		column_b1.setCellValueFactory(new MapValueFactory<>("airportCode"));
-
+		column_b1.setStyle("-fx-alignment: CENTER;");
+		
 		TableColumn<Map, String> column_b2 = new TableColumn<>("Airport Name");
 		column_b2.setCellValueFactory(new MapValueFactory<>("airportName"));
 
@@ -274,24 +299,10 @@ public class FlightsFlowAnalyser extends Application {
 		tblVwUnusedAirports.getColumns().add(column_b1);
 		tblVwUnusedAirports.getColumns().add(column_b2);
 		
-	
-		ObservableList<Map<String, Object>> items_b =
-			    FXCollections.<Map<String, Object>>observableArrayList();
-		
-		Map<String, Object> itemb1 = new HashMap<>();
-		itemb1.put("airportCode", "HKG");
-		itemb1.put("airportName" , "Hong Kong International Airport");
-		
-		for (int i=0; i<100;i++)
-			items_b.add(itemb1);
-
-		tblVwUnusedAirports.getItems().addAll(items_b);
-		
 		GridPane grid = new GridPane();
 	    grid.setHgap(30);
 	    grid.setVgap(10);
 	    grid.setPadding(new Insets(10, 10, 10, 10));
-//		grid.setFillWidth(tblVwUnusedAirports, true);
 		
 	    // Category in column 1, row 1
 	    Text category = new Text("Number of flights from each airport:");
@@ -310,11 +321,10 @@ public class FlightsFlowAnalyser extends Application {
 	    grid.add((tblVwUnusedAirports), 1, 1);
 	    
 	    final ColumnConstraints col1 = new ColumnConstraints(100, Control.USE_COMPUTED_SIZE, Control.USE_COMPUTED_SIZE);
-	    // should grow as much as possible in width
+	    // should grow as much as possible in width for the right table view
 	    final ColumnConstraints col2 = new ColumnConstraints(200, Control.USE_COMPUTED_SIZE, Double.MAX_VALUE);
 	    col2.setHgrow(Priority.ALWAYS);
 	    
-//	    gridPane.getRowConstraints().add(row);
 	    grid.getColumnConstraints().addAll(col1, col2);
 	    
 		return grid;
@@ -322,196 +332,104 @@ public class FlightsFlowAnalyser extends Application {
 	
 	
 	public VBox createFlightsAnalysisVBox() {
-			// Create tree table view
-		
+
 		tblVwFlightPassengers = new TableView();
-	
+
 		// Set the table view to resize columns automatically
 		tblVwFlightPassengers.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
-		
-		// Use Map to add data
-		
+
+		// Use Map object to add data		
 		TableColumn<Map, String> column_a1 = new TableColumn<>("Flight ID");
 		column_a1.setCellValueFactory(new MapValueFactory<>("flightID"));
 
 		TableColumn<Map, String> column_a2 = new TableColumn<>("Number of Passengers");
 		column_a2.setCellValueFactory(new MapValueFactory<>("numOfPassengers"));
+		column_a2.setStyle("-fx-alignment: CENTER;");
 
 		TableColumn<Map, String> column_a3 = new TableColumn<>("Airport From");
 		column_a3.setCellValueFactory(new MapValueFactory<>("airportFrom"));
+		column_a3.setStyle("-fx-alignment: CENTER;");
 
 		TableColumn<Map, String> column_a4 = new TableColumn<>("Airport To");
 		column_a4.setCellValueFactory(new MapValueFactory<>("airportTo"));
-		
+		column_a4.setStyle("-fx-alignment: CENTER;");
+
 		TableColumn<Map, String> column_a5 = new TableColumn<>("Flight Mileage");
-		column_a5.setCellValueFactory(new MapValueFactory<>("flightMileage"));		
-		
+		column_a5.setCellValueFactory(new MapValueFactory<>("flightMileage"));	
+		column_a5.setStyle("-fx-alignment: CENTER_RIGHT;");
+
 		tblVwFlightPassengers.getColumns().add(column_a1);
 		tblVwFlightPassengers.getColumns().add(column_a2);
 		tblVwFlightPassengers.getColumns().add(column_a3);
 		tblVwFlightPassengers.getColumns().add(column_a4);
 		tblVwFlightPassengers.getColumns().add(column_a5);
 
-		//			TreeTableView<FlightPassengerInfo> treeTableView = new TreeTableView<FlightPassengerInfo>();
-//			TreeTableColumn<FlightPassengerInfo, String> treeTableColumn1 = new TreeTableColumn<>("Flight ID");
-//			TreeTableColumn<FlightPassengerInfo, String> treeTableColumn2 = new TreeTableColumn<>("Airport From");
-//	
-//			treeTableColumn1.setCellValueFactory(new TreeItemPropertyValueFactory<>("flightID"));
-//			treeTableColumn2.setCellValueFactory(new TreeItemPropertyValueFactory<>("airportFrom"));
-//	
-//			treeTableView.getColumns().add(treeTableColumn1);
-//			treeTableView.getColumns().add(treeTableColumn2);
-//	
-//			String passengerID = "PUD8209OG3";
-//			String flightID = "PME8178S";
-//			String airportFrom = "DEN";
-//			String airportTo = "PEK";
-//			String depTime = "13:20";
-//			String arrTime = "22:00";
-//			String flightTime = "7:40";
-//			
-//			FlightPassengerInfo fpInfo = new FlightPassengerInfo(flightID, airportFrom, airportTo, depTime, arrTime, flightTime);
-//			FlightPassengerInfo fpInfo2 = new FlightPassengerInfo("XXXX", airportFrom, airportTo, depTime, arrTime, flightTime);
-//			TreeItem mercedes1 = new TreeItem(fpInfo);
-//			TreeItem mercedes2 = new TreeItem(fpInfo2);
-//			//TreeItem mercedes3 = new TreeItem(new Car("Mercedes", "CLA 200"));
-//	
-//			TreeItem mercedes = new TreeItem(fpInfo);
-//			mercedes.getChildren().add(mercedes1);
-//			mercedes.getChildren().add(mercedes2);
-//	
-//	//		TreeItem audi1 = new TreeItem(new Car("Audi", "A1"));
-//	//		TreeItem audi2 = new TreeItem(new Car("Audi", "A5"));
-//	//		TreeItem audi3 = new TreeItem(new Car("Audi", "A7"));
-//	//
-//	//		TreeItem audi = new TreeItem(new Car("Audi", "..."));
-//	//		audi.getChildren().add(audi1);
-//	//		audi.getChildren().add(audi2);
-//	//		audi.getChildren().add(audi3);
-//	
-//			TreeItem cars = new TreeItem(fpInfo);
-//	//		cars.getChildren().add(audi);
-//			cars.getChildren().add(mercedes);
-//	
-//			treeTableView.setRoot(cars);
-			
-			return (new VBox(tblVwFlightPassengers));
-		}
+		return (new VBox(tblVwFlightPassengers));
+	}
 
+	
 	public VBox createPassengersAnalysisVBox() {
 		
 		trTblVwPassengerMileage = new TreeTableView();
-		
+		trTblVwPassengerMileage.setColumnResizePolicy((param) -> true );
+
 		// Create tree table view
-//		TreeTableView<FlightPassengerInfo> treeTableView = new TreeTableView<FlightPassengerInfo>();
-		TreeTableColumn<DisplayPassengerMileage, String> treeTableColumn1 = new TreeTableColumn<>("Passenger ID");
-		TreeTableColumn<DisplayPassengerMileage, String> treeTableColumn2 = new TreeTableColumn<>("Total Mileage");
-		TreeTableColumn<DisplayPassengerMileage, String> treeTableColumn3 = new TreeTableColumn<>("Flight ID");
-		TreeTableColumn<DisplayPassengerMileage, String> treeTableColumn4 = new TreeTableColumn<>("Airport From Code");		
-		TreeTableColumn<DisplayPassengerMileage, String> treeTableColumn5 = new TreeTableColumn<>("Airport From Name");
-		TreeTableColumn<DisplayPassengerMileage, String> treeTableColumn6 = new TreeTableColumn<>("Airport To Code");
-		TreeTableColumn<DisplayPassengerMileage, String> treeTableColumn7 = new TreeTableColumn<>("Airport To Name");
-		TreeTableColumn<DisplayPassengerMileage, String> treeTableColumn8 = new TreeTableColumn<>("Flight Mileage");
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn1 = new TreeTableColumn<>("Passenger ID");
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn2 = new TreeTableColumn<>("Total Mileage");
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn3 = new TreeTableColumn<>("Flight ID");
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn4 = new TreeTableColumn<>("From Airport");
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn4_1 = new TreeTableColumn<>("Code");
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn4_2 = new TreeTableColumn<>("Name");	
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn5 = new TreeTableColumn<>("To Airport");
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn5_1 = new TreeTableColumn<>("Code");
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn5_2 = new TreeTableColumn<>("Name");
+		TreeTableColumn<DisplayPassengerMileageInfo, String> treeTableColumn6 = new TreeTableColumn<>("Flight Mileage");
 
 		treeTableColumn1.setCellValueFactory(new TreeItemPropertyValueFactory<>("passengerID"));
 		treeTableColumn2.setCellValueFactory(new TreeItemPropertyValueFactory<>("totMileage"));
+		treeTableColumn2.setStyle("-fx-alignment: CENTER_RIGHT;");
 		treeTableColumn3.setCellValueFactory(new TreeItemPropertyValueFactory<>("flightID"));
-		treeTableColumn4.setCellValueFactory(new TreeItemPropertyValueFactory<>("airportFromCode"));
-		treeTableColumn5.setCellValueFactory(new TreeItemPropertyValueFactory<>("airportFromName"));
-		treeTableColumn6.setCellValueFactory(new TreeItemPropertyValueFactory<>("airportToCode"));
-		treeTableColumn7.setCellValueFactory(new TreeItemPropertyValueFactory<>("airportToName"));
-		treeTableColumn8.setCellValueFactory(new TreeItemPropertyValueFactory<>("flightMileage"));
-
+		treeTableColumn4_1.setCellValueFactory(new TreeItemPropertyValueFactory<>("airportFromCode"));
+		treeTableColumn4_1.setStyle("-fx-alignment: CENTER;");
+		treeTableColumn4_2.setCellValueFactory(new TreeItemPropertyValueFactory<>("airportFromName"));
+		treeTableColumn4.getColumns().addAll(treeTableColumn4_1, treeTableColumn4_2);
+		treeTableColumn5_1.setCellValueFactory(new TreeItemPropertyValueFactory<>("airportToCode"));
+		treeTableColumn5_1.setStyle("-fx-alignment: CENTER;");
+		treeTableColumn5_2.setCellValueFactory(new TreeItemPropertyValueFactory<>("airportToName"));
+		treeTableColumn5.getColumns().addAll(treeTableColumn5_1, treeTableColumn5_2);
+		treeTableColumn6.setCellValueFactory(new TreeItemPropertyValueFactory<>("flightMileage"));
+		treeTableColumn6.setStyle("-fx-alignment: CENTER_RIGHT;");
+		
 		trTblVwPassengerMileage.getColumns().add(treeTableColumn1);
 		trTblVwPassengerMileage.getColumns().add(treeTableColumn2);
 		trTblVwPassengerMileage.getColumns().add(treeTableColumn3);
 		trTblVwPassengerMileage.getColumns().add(treeTableColumn4);
 		trTblVwPassengerMileage.getColumns().add(treeTableColumn5);
 		trTblVwPassengerMileage.getColumns().add(treeTableColumn6);
-		trTblVwPassengerMileage.getColumns().add(treeTableColumn7);
-		trTblVwPassengerMileage.getColumns().add(treeTableColumn8);
-		
-
+		treeTableColumn1.setPrefWidth(120);
+		treeTableColumn2.setPrefWidth(90);
+		treeTableColumn3.setPrefWidth(90);
+		treeTableColumn4_1.setPrefWidth(50);
+		treeTableColumn4_2.setPrefWidth(140);
+		treeTableColumn5_1.setPrefWidth(50);
+		treeTableColumn5_2.setPrefWidth(140);
+		treeTableColumn6.setPrefWidth(90);
 		
 		return (new VBox(trTblVwPassengerMileage));
-		
-//		TableView tableView = new TableView();
-
-//		TableColumn<FlightPassengerInfo, String> column1 = new TableColumn<>("Passenger ID");
-//		column1.setCellValueFactory(new PropertyValueFactory<>("flightID"));
-//
-//
-//		TableColumn<FlightPassengerInfo, String> column2 = new TableColumn<>("Flight ID");
-//		column2.setCellValueFactory(new PropertyValueFactory<>("flightID"));
-//
-//		TableColumn<FlightPassengerInfo, String> column3 = new TableColumn<>("Airport From");
-//		column3.setCellValueFactory(new PropertyValueFactory<>("airportFrom"));
-//		
-//		TableColumn<FlightPassengerInfo, String> column4 = new TableColumn<>("Airport To");
-//		column4.setCellValueFactory(new PropertyValueFactory<>("airportTo"));
-//		TableColumn<FlightPassengerInfo, String> column5 = new TableColumn<>("Departure Time");
-//		column5.setCellValueFactory(new PropertyValueFactory<>("depTime"));
-//		TableColumn<FlightPassengerInfo, String> column6 = new TableColumn<>("Flight Duration");
-//		column6.setCellValueFactory(new PropertyValueFactory<>("flightTime"));
-		
-//		String passengerID = "PUD8209OG3";
-//		String flightID = "PME8178S";
-//		String airportFrom = "DEN";
-//		String airportTo = "PEK";
-//		String depTime = "13:20";
-//		String arrTime = "22:00";
-//		String flightTime = "7:40";
-//		
-//		FlightPassengerInfo fpInfo = new FlightPassengerInfo(flightID, airportFrom, airportTo, depTime, arrTime, flightTime);
-//		FlightPassengerInfo fpInfo2 = new FlightPassengerInfo("XXXX", airportFrom, airportTo, depTime, arrTime, flightTime);
-//
-//		// Use Map to add data
-//		
-//		TableColumn<Map, String> column1 = new TableColumn<>("Passenger ID");
-//		column1.setCellValueFactory(new MapValueFactory<>("passengerID"));
-//
-//		TableColumn<Map, String> column2 = new TableColumn<>("Flight ID");
-//		column2.setCellValueFactory(new MapValueFactory<>("flightID"));
-//
-//		TableColumn<Map, String> column3 = new TableColumn<>("Airport From");
-//		column3.setCellValueFactory(new MapValueFactory<>("airportFrom"));
-//		
-//		TableColumn<Map, String> column4 = new TableColumn<>("Airport To");
-//		column4.setCellValueFactory(new MapValueFactory<>("airportTo"));
-//		
-//		TableColumn<Map, String> column5 = new TableColumn<>("Departure Time");
-//		column5.setCellValueFactory(new MapValueFactory<>("depTime"));
-//		
-//		TableColumn<Map, String> column6 = new TableColumn<>("Flight Duration");
-//		column6.setCellValueFactory(new MapValueFactory<>("flightTime"));
-//		
-//		tableView.getColumns().add(column1);
-//		tableView.getColumns().add(column2);
-//		tableView.getColumns().add(column3);
-//		tableView.getColumns().add(column4);
-//		tableView.getColumns().add(column5);
-//		tableView.getColumns().add(column6);
-//		
-//		ObservableList<Map<String, Object>> items =
-//			    FXCollections.<Map<String, Object>>observableArrayList();
-//		
-//		Map<String, Object> item1 = new HashMap<>();
-//		item1.put("passengerID", passengerID);
-//		item1.put("flightID" , flightID);
-//		item1.put("airportFrom", airportFrom);
-//		item1.put("airportTo" , airportTo);
-//		item1.put("depTime", depTime);
-//		item1.put("arrTime" , arrTime);
-//		item1.put("flightTime" , flightTime);
-//		
-//		for (int i=0; i<100;i++)
-//			items.add(item1);
-//
-//		tableView.getItems().addAll(items);
-//		tableView.setPlaceholder(new Label("No rows to display"));
-//		
-//		return(new VBox(tableView));
 	}
+	
+	
+	public VBox createLoggingVBox() {
+
+	    TextArea txtAreaLogging = new TextArea();
+		txtAreaLogging.setPrefHeight(400);
+		txtAreaLogging.setFont(Font.font("Courier New", FontWeight.BOLD, 14));
+		
+		Logger.getInstance().setTextArea(txtAreaLogging);		
+
+		return (new VBox(txtAreaLogging));
+	}
+	
 	
 	public static void displayAirportFlightsAnalysis(Map mapResult) {
 		ObservableList<Map<String, Object>> items = FXCollections.<Map<String, Object>>observableArrayList();
@@ -527,22 +445,19 @@ public class FlightsFlowAnalyser extends Application {
 			items.add(item);
 	    }
 		tblVwAirportFlights.getItems().addAll(items);
+		Utilities.autoResizeTableViewColumns(tblVwAirportFlights);
 	}
 	
 	public static void displayUnusedAirportsAnalysis(Map mapResult) {
-		// Output for the objective (a) Unused airports
-//		System.out.println("=================================================================");
-//		System.out.println("Objective (a): Unused Airports");
-//		System.out.println("=================================================================");
-		
+
 		ObservableList<Map<String, Object>> items = FXCollections.<Map<String, Object>>observableArrayList();
         Iterator iterator4 = mapResult.entrySet().iterator();
+        
         while(iterator4.hasNext()) {
             Map.Entry<Object, Set> entry = (Map.Entry) iterator4.next();
             Iterator airportNames = entry.getValue().iterator();
- //           System.out.println("Unused airports:");
+            
             while(airportNames.hasNext()) {
- //           	System.out.println(airportNames.next());
             	String sAirportCode = (String) airportNames.next();
     			Map<String, Object> item = new HashMap<>();
     			item.put("airportCode", sAirportCode);
@@ -551,49 +466,18 @@ public class FlightsFlowAnalyser extends Application {
             }
     		tblVwUnusedAirports.getItems().addAll(items);
         } 
-		
-		
-//        Iterator iteratorA2 = mapResult.entrySet().iterator();
-//        
-//        PrintWriter writer = null;
-//		try {
-//			writer = new PrintWriter(new File("airports.csv"));
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//	    while(iteratorA2.hasNext()) {
-//	            Map.Entry<Object, FlightTripInfo> entry = (Map.Entry) iteratorA2.next();
-//	            FlightTripInfo objFTI = entry.getValue();
-//	            System.out.println("AirportFrom=" + objFTI.getAirportFrom() + ", AirportTo=" + objFTI.getAirportTo());
-//	            // Write to the output file
-//	            writer.println(objFTI.getAirportFrom() + "," + objFTI.getAirportTo());
-//	        } 
-//        writer.close();	
+		Utilities.autoResizeTableViewColumns(tblVwUnusedAirports);
+
 	}
 	
 	public static void displayFlightPassengersAnalysis(Map mapResult) {
 		// Output for the objective (b) & (c)
 		ObservableList<Map<String, Object>> items = FXCollections.<Map<String, Object>>observableArrayList();
-		
-//		System.out.println("=================================================================");
-//		System.out.println("Objective (b) & (c) : Flight, Passengers");
-//		System.out.println("=================================================================");
         Iterator iterator = mapResult.entrySet().iterator();
         while(iterator.hasNext()) {
             Map.Entry<Object, List<Object>> entry = (Map.Entry) iterator.next();
             FlightPassengerInfo objFP = (FlightPassengerInfo)entry.getValue();
-//            System.out.println("Flight ID: " + entry.getKey() + " (" + objFP.getNumOfPassengers() + " passengers)");
-//            System.out.println("From airport: " + objFP.getAirportFrom());
-//            System.out.println("To airport: " + objFP.getAirportTo());
-//            System.out.println("Departure time: " + objFP.getDepTime());
-//            System.out.println("Arrival time: " + objFP.getArrTime());
-//            System.out.println("Flight time: " + objFP.getFlightTime());
             List passengers = objFP.getPassengers();
-//           for (int i=0; i<passengers.size(); i++) {
-//            	System.out.println(passengers.get(i));
-//            }
-//            System.out.println("-------------------------------------------------------");
 			Map<String, Object> item = new HashMap<>();
 			item.put("flightID", entry.getKey());
 			item.put("numOfPassengers" , objFP.getNumOfPassengers());
@@ -601,10 +485,11 @@ public class FlightsFlowAnalyser extends Application {
 			item.put("airportFromName", getAirportName(objFP.getAirportFrom()));
 			item.put("airportTo", objFP.getAirportTo());
 			item.put("airportToName", getAirportName(objFP.getAirportTo()));
-			item.put("flightMileage", 10000.0);
+			item.put("flightMileage", new DecimalFormat("#,###").format(objFP.getFlightMileage()));
 			items.add(item);
         } 
 		tblVwFlightPassengers.getItems().addAll(items);
+		Utilities.autoResizeTableViewColumns(tblVwFlightPassengers);
 	}
 	
 	public static void displayPassengerMileageAnalysis(Map mapFlightMileage, Map mapPassengerMileage) {
@@ -619,65 +504,39 @@ public class FlightsFlowAnalyser extends Application {
                 return o2.getValue().compareTo(o1.getValue());
             }
         });
-//		System.out.println("=================================================================");
-//		System.out.println("Objective (d): Passenger Mileage");
-//		System.out.println("=================================================================");
-		
  		TreeItem trItmTop = new TreeItem();
         for (Entry<String, Double> entry : list) {
- //           System.out.println(entry.getKey() + ": " + entry.getValue());
-    		DisplayPassengerMileage objPassengerTot = new DisplayPassengerMileage();
+    		DisplayPassengerMileageInfo objPassengerTot = new DisplayPassengerMileageInfo();
     		objPassengerTot.setPassengerID(entry.getKey());
-    		objPassengerTot.setTotMileage(entry.getValue());
+    		objPassengerTot.setTotMileage(new DecimalFormat("#,###").format(entry.getValue()));
        		TreeItem trItmPassengerTot = new TreeItem(objPassengerTot);
        		
             CopyOnWriteArrayList<PassengerTripInfo> lstPTI = (CopyOnWriteArrayList<PassengerTripInfo>) mapFlightMileage.get(entry.getKey());
             for (int i=0; i<lstPTI.size(); i++) {
             	PassengerTripInfo objPTI = lstPTI.get(i);
-  //          	System.out.println("\t"+objPTI.getFlightID()+": "+objPTI.getFlightMileage());
-        		
-        		DisplayPassengerMileage objFlightTrip = new DisplayPassengerMileage();
+        		DisplayPassengerMileageInfo objFlightTrip = new DisplayPassengerMileageInfo();
         		objFlightTrip.setFlightID(objPTI.getFlightID());
         		objFlightTrip.setAirportFromCode(objPTI.getAirportFrom());
         		objFlightTrip.setAirportFromName(getAirportName(objPTI.getAirportFrom()));
         		objFlightTrip.setAirportToCode(objPTI.getAirportTo());
         		objFlightTrip.setAirportToName(getAirportName(objPTI.getAirportTo()));
-        		objFlightTrip.setFlightMileage(objPTI.getFlightMileage());
+        		objFlightTrip.setFlightMileage(new DecimalFormat("#,###").format(objPTI.getFlightMileage()));
         		
         		TreeItem trItmFlightTrip = new TreeItem(objFlightTrip);
         		trItmPassengerTot.getChildren().add(trItmFlightTrip);
-
-//        		TreeItem cars = new TreeItem(fpInfo);
-//        		cars.getChildren().add(audi);
- //       		cars.getChildren().add(mercedes);
-
             }
      		trItmTop.getChildren().add(trItmPassengerTot);
         }	
         trTblVwPassengerMileage.setRoot(trItmTop);
         trTblVwPassengerMileage.setShowRoot(false);
+        //autoResizeTreeTableViewColumns(trTblVwPassengerMileage);
+        
 	}
 	
-	public static void main(String[] args) {
-
-		System.out.println("FlightsFlowAnalyser");
-		System.out.println("java.runtime.version: " + System.getProperty("java.runtime.version", "(undefined)"));
-		System.out.println("javafx.version: " + System.getProperty("javafx.version", "(undefined)"));
+	public static void startMapReduceJobs(String sAirportDataFile, String sPassengerDataFile) {
 		
-		// Load the system properties from file
-		try {
-			configProps = Utilities.loadProperties(propFileName);
-		} catch (Exception e) {
-			System.err.println("Exception in loading properties file: " + e);			
-			return;
-		}
-		
-		// JavaFX will then call start(Stage) in this Class		
-		launch(args);
-
-	}
-	
-	public static void buttonStartClicked(String sAirportDataFile, String sPassengerDataFile) {
+		// Set mouse pointer to Cursor.WAIT
+		Utilities.setCursorWait(stgPrimaryStage.getScene());
 		
 		// Load the Airport data from file
 		dictAirportInfo = Utilities.loadAirportData(sAirportDataFile);		
@@ -690,7 +549,7 @@ public class FlightsFlowAnalyser extends Application {
 		try {	
 			splitFiles = Utilities.splitFile(inputFile, Integer.parseInt(configProps.getProperty("partition.size")));
 		} catch (Exception e) {
-			System.err.println("Error in splitting the input file: " + e);		
+			Logger.getInstance().logError("Error in splitting the input file: " + e);		
 			return;
 		}
 		
@@ -701,17 +560,24 @@ public class FlightsFlowAnalyser extends Application {
 			inFiles.add(sf.getName());
 		}
 		
-		// Run Job 1 for objective (a)
+		ArrayList<String> inFilesJob2 = new ArrayList<String>();
+		inFilesJob2.add(configProps.getProperty("job1.outputfile.2"));
+		
+		// Run Job 1 for objective (a): No. of flights from each airport
 		runJob1(inFiles);
 		
-		ArrayList<String> inFilesJob2 = new ArrayList<String>();
-		inFilesJob2.add("airports.csv");
+		// Run Job 2 for objective (a): Unused airports
 		runJob2(inFilesJob2);
 		
+		// Run Job 3 for objective (b): List of flights with passenger list, 
+		// (c): No. of passengers on each flight, and (d): Line-of-sight miles for each flight
 		runJob3(inFiles);
 		
+		// Run Job 4 for objective (d) Total mileage traveled by each passenger, and passenger having highest mileage
 		runJob4(inFiles);
 		
+		// Set mouse pointer back to Cursor.DEFAULT
+		Utilities.setCursorDefault(stgPrimaryStage.getScene());
 	}
 	
 	// Job 1: Flights from each airport
@@ -719,10 +585,10 @@ public class FlightsFlowAnalyser extends Application {
 		//-------------------------------------------------------------------
 		// Create a job for objective (a)
 		//-------------------------------------------------------------------
-		Config config2 = new Config(inFiles, AirportFlightMapper.class, AirportFlightReducer.class);
+		Config config = new Config(inFiles, AirportFlightMapper.class, AirportFlightReducer.class, false);
 		// add the airport data into the config
 
-		Job jobAirportFlights = new Job(config2);
+		Job jobAirportFlights = new Job(config);
 		try {
 			jobAirportFlights.addJobResultBucket("UsedAirports");
 			jobAirportFlights.addJobResultBucket("FlightCount");			
@@ -732,48 +598,59 @@ public class FlightsFlowAnalyser extends Application {
 			e.printStackTrace();
 		}
 		
-		// Output for the objective (a)
-		displayAirportFlightsAnalysis(jobAirportFlights.getJobResult("FlightCount"));
-		
-//        Iterator iteratorA1 = jobAirportFlights.getJobResult("FlightCount").entrySet().iterator();
-//        
-//		System.out.println("=================================================================");
-//		System.out.println("Objective (a): Airport, Flight Count");
-//		System.out.println("=================================================================");
-//        while(iteratorA1.hasNext()) {
-//            Map.Entry<Object, Integer> entry = (Map.Entry) iteratorA1.next();
-//            int intFlightCount = entry.getValue().intValue();
-//            System.out.println("Airport: " + entry.getKey() + " (" + intFlightCount + " flights)");
-//        } 
-
-		//TODO: relocate this part of code
-		// Write to output file for job chaining
-        Iterator iteratorA2 = jobAirportFlights.getJobResult("UsedAirports").entrySet().iterator();
+		// Write output file #1
+		// Write the list of used airports to output file for job chaining
+        Iterator iterator1 = jobAirportFlights.getJobResult("FlightCount").entrySet().iterator();
         
-        PrintWriter writer = null;
+        PrintWriter writer1 = null;
 		try {
-			writer = new PrintWriter(new File("airports.csv"));
+			writer1 = new PrintWriter(new File(configProps.getProperty("job1.outputfile.1")));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	    while(iteratorA2.hasNext()) {
-	            Map.Entry<Object, FlightTripInfo> entry = (Map.Entry) iteratorA2.next();
-	            FlightTripInfo objFTI = entry.getValue();
-//	            System.out.println("AirportFrom=" + objFTI.getAirportFrom() + ", AirportTo=" + objFTI.getAirportTo());
-	            // Write to the output file
-	            writer.println(objFTI.getAirportFrom() + "," + objFTI.getAirportTo());
+		
+		// Print column headers into the output file
+		writer1.println("AirportCode,AirportName,NumOfFlights");
+	    while(iterator1.hasNext()) {
+	            Map.Entry<Object, Integer> entry = (Map.Entry) iterator1.next();
+	            writer1.println(entry.getKey() + "," + getAirportName((String)entry.getKey()) + "," + entry.getValue());
 	        } 
-        writer.close();
+        writer1.close();
         
+        
+		// Write output file #2
+		// Write the list of used airports to output file for job chaining
+        Iterator iterator2 = jobAirportFlights.getJobResult("UsedAirports").entrySet().iterator();
+        
+        PrintWriter writer2 = null;
+		try {
+			writer2 = new PrintWriter(new File(configProps.getProperty("job1.outputfile.2")));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    while(iterator2.hasNext()) {
+	            Map.Entry<Object, FlightTripInfo> entry = (Map.Entry) iterator2.next();
+	            FlightTripInfo objFTI = entry.getValue();
+	            // Write entry to the output file
+	            writer2.println(objFTI.getAirportFrom() + "," + objFTI.getAirportTo());
+	        } 
+        writer2.close();
+        
+		// Output for the objective (a)
+		displayAirportFlightsAnalysis(jobAirportFlights.getJobResult("FlightCount"));
+		
+		
 	}
+	
 	
 	// Job 2: List of unused airport
 	public static void runJob2(ArrayList<String> inFiles) {	
 		//-------------------------------------------------------------------
 		// Create a job for objective (a) Unused airports
 		//-------------------------------------------------------------------
-		Config config = new Config(inFiles, UnusedAirportMapper.class, UnusedAirportReducer.class);
+		Config config = new Config(inFiles, UnusedAirportMapper.class, UnusedAirportReducer.class, true);
 		Job jobUnusedAirports = new Job(config);
 		jobUnusedAirports.addRefData("AirportInfo", ((HashMap)dictAirportInfo).clone());
 		try {
@@ -786,12 +663,15 @@ public class FlightsFlowAnalyser extends Application {
 		displayUnusedAirportsAnalysis(jobUnusedAirports.getJobResult());  
 	}
 	
+	
 	public static void runJob3(ArrayList<String> inFiles) {
 		//-------------------------------------------------------------------
 		// Create a job for objective (b): List of flights
 		//-------------------------------------------------------------------
-		Config config = new Config(inFiles, FlightPassengerMapper.class, FlightPassengerReducer.class);
+		Config config = new Config(inFiles, FlightPassengerMapper.class, FlightPassengerReducer.class, false);
 		Job jobFlightPassengers = new Job(config);
+		jobFlightPassengers.addRefData("AirportInfo", ((HashMap) dictAirportInfo).clone());
+		
 		try {
 			jobFlightPassengers.run();
 		} catch (Exception e) {
@@ -807,8 +687,8 @@ public class FlightsFlowAnalyser extends Application {
 		//-------------------------------------------------------------------
 		// Create a job for objective(d) Passenger having earned the highest air miles
 		//-------------------------------------------------------------------
-		Config config4 = new Config(inFiles, PassengerMileageMapper.class, PassengerMileageReducer.class);
-		Job jobPassengerMileage = new Job(config4);
+		Config config = new Config(inFiles, PassengerMileageMapper.class, PassengerMileageReducer.class, false);
+		Job jobPassengerMileage = new Job(config);
 		jobPassengerMileage.addRefData("AirportInfo", ((HashMap) dictAirportInfo).clone());
 		try {
 			jobPassengerMileage.addJobResultBucket("FlightMileage");
