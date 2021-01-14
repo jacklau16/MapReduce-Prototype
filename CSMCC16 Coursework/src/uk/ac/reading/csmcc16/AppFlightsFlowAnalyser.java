@@ -146,7 +146,7 @@ public class AppFlightsFlowAnalyser extends Application {
 			tbPnMain.getTabs().add(new Tab("Start", createStartVBox()));
 			tbPnMain.getTabs().add(new Tab("Airports Analysis", createAirportsAnalysisGridPane()));
 			tbPnMain.getTabs().add(new Tab("Flights Analysis", createFlightsAnalysisVBox()));
-			tbPnMain.getTabs().add(new Tab("Passenger Analysis", createPassengersAnalysisVBox()));
+			tbPnMain.getTabs().add(new Tab("Passengers Analysis", createPassengersAnalysisVBox()));
 			tbPnMain.getTabs().add(new Tab("Log Messages", createLoggingVBox()));
 
 			primaryStage.setScene(new Scene(new VBox(tbPnMain), 800, 600));
@@ -358,11 +358,26 @@ public class AppFlightsFlowAnalyser extends Application {
 		column_a5.setCellValueFactory(new MapValueFactory<>("flightMileage"));	
 		column_a5.setStyle("-fx-alignment: CENTER_RIGHT;");
 
+		TableColumn<Map, String> column_a6 = new TableColumn<>("Departure Time");
+		column_a6.setCellValueFactory(new MapValueFactory<>("departureTime"));
+		column_a6.setStyle("-fx-alignment: CENTER;");
+
+		TableColumn<Map, String> column_a7 = new TableColumn<>("Arrival Time");
+		column_a7.setCellValueFactory(new MapValueFactory<>("arrivalTime"));
+		column_a7.setStyle("-fx-alignment: CENTER;");
+
+		TableColumn<Map, String> column_a8 = new TableColumn<>("Flight Time");
+		column_a8.setCellValueFactory(new MapValueFactory<>("flightTime"));	
+		column_a8.setStyle("-fx-alignment: CENTER_RIGHT;");
+		
 		tblVwFlightPassengers.getColumns().add(column_a1);
 		tblVwFlightPassengers.getColumns().add(column_a2);
 		tblVwFlightPassengers.getColumns().add(column_a3);
 		tblVwFlightPassengers.getColumns().add(column_a4);
 		tblVwFlightPassengers.getColumns().add(column_a5);
+		tblVwFlightPassengers.getColumns().add(column_a6);
+		tblVwFlightPassengers.getColumns().add(column_a7);
+		tblVwFlightPassengers.getColumns().add(column_a8);
 
 		return (new VBox(tblVwFlightPassengers));
 	}
@@ -431,7 +446,7 @@ public class AppFlightsFlowAnalyser extends Application {
 	}
 	
 	
-	public static void displayAirportFlightsAnalysis(Map mapResult) {
+	public static void displayAirportsAnalysis(Map mapResult) {
 		ObservableList<Map<String, Object>> items = FXCollections.<Map<String, Object>>observableArrayList();
 
 	    Iterator iteratorA1 = mapResult.entrySet().iterator();
@@ -470,7 +485,7 @@ public class AppFlightsFlowAnalyser extends Application {
 
 	}
 	
-	public static void displayFlightPassengersAnalysis(Map mapResult) {
+	public static void displayFlightsAnalysis(Map mapResult) {
 		// Output for the objective (b) & (c)
 		ObservableList<Map<String, Object>> items = FXCollections.<Map<String, Object>>observableArrayList();
         Iterator iterator = mapResult.entrySet().iterator();
@@ -486,13 +501,16 @@ public class AppFlightsFlowAnalyser extends Application {
 			item.put("airportTo", objFP.getAirportTo());
 			item.put("airportToName", getAirportName(objFP.getAirportTo()));
 			item.put("flightMileage", new DecimalFormat("#,###").format(objFP.getFlightMileage()));
+			item.put("departureTime", objFP.getDepTime());
+			item.put("arrivalTime", objFP.getArrTime());
+			item.put("flightTime", objFP.getFlightTime());
 			items.add(item);
         } 
 		tblVwFlightPassengers.getItems().addAll(items);
 		Utilities.autoResizeTableViewColumns(tblVwFlightPassengers);
 	}
 	
-	public static void displayPassengerMileageAnalysis(Map mapFlightMileage, Map mapPassengerMileage) {
+	public static void displayPassengersAnalysis(Map mapFlightMileage, Map mapPassengerMileage) {
 		// Output for the objective (d)
 		
 		//Sort the passenger records by their total mileage in descending order 
@@ -639,7 +657,7 @@ public class AppFlightsFlowAnalyser extends Application {
         writer2.close();
         
 		// Output for the objective (a)
-		displayAirportFlightsAnalysis(jobAirportFlights.getJobResult("FlightCount"));
+		displayAirportsAnalysis(jobAirportFlights.getJobResult("FlightCount"));
 		
 		
 	}
@@ -679,7 +697,7 @@ public class AppFlightsFlowAnalyser extends Application {
 			e.printStackTrace();
 		}
 		
-		displayFlightPassengersAnalysis(jobFlightPassengers.getJobResult());
+		displayFlightsAnalysis(jobFlightPassengers.getJobResult());
 
 	}
 	
@@ -699,13 +717,16 @@ public class AppFlightsFlowAnalyser extends Application {
 			e.printStackTrace();
 		}
 		
-		displayPassengerMileageAnalysis(jobPassengerMileage.getJobResult("FlightMileage"), jobPassengerMileage.getJobResult("PassengerMileage"));
+		displayPassengersAnalysis(jobPassengerMileage.getJobResult("FlightMileage"), jobPassengerMileage.getJobResult("PassengerMileage"));
 	}
 	
 	public static String getAirportName(String sCode) {
 		if (dictAirportInfo!=null) {
 			AirportInfo objAI = (AirportInfo)dictAirportInfo.get(sCode);
-			return objAI.getName();
+			if (objAI==null)
+				return "";
+			else
+				return objAI.getName();
 		} else
 			return "";
 	}
