@@ -33,7 +33,7 @@ public class FlightPassengerReducer extends Reducer {
 			String airportTo = objPD.getAirportTo();
 			String depTime =  new SimpleDateFormat("hh:mm:ss").format(new Date(objPD.getDepTime()*1000));
 			String arrTime =  new SimpleDateFormat("hh:mm:ss").format(new Date(objPD.getDepTime()*1000+objPD.getTotFlightTime()*60*1000));
-			String flightTime = new SimpleDateFormat("hh:mm:ss").format(new Date(objPD.getTotFlightTime()*60*1000));
+			String flightTime = new SimpleDateFormat("h:mm:ss").format(new Date(objPD.getTotFlightTime()*60*1000));
 			AirportInfo objAirportFrom = (AirportInfo) mapAirportInfo.get(airportFrom);
 			AirportInfo objAirportTo = (AirportInfo) mapAirportInfo.get(airportTo);
 			
