@@ -319,7 +319,7 @@ public class AppFlightsFlowAnalyser extends Application {
 		TreeTableColumn<DisplayFlightPassengerInfo, String> treeTableColumn5 = new TreeTableColumn<>("Flight\nMileage");
 		TreeTableColumn<DisplayFlightPassengerInfo, String> treeTableColumn6 = new TreeTableColumn<>("Departure\nTime");
 		TreeTableColumn<DisplayFlightPassengerInfo, String> treeTableColumn7 = new TreeTableColumn<>("Arrival\nTime");
-		TreeTableColumn<DisplayFlightPassengerInfo, String> treeTableColumn8 = new TreeTableColumn<>("Flight\nTime");
+		TreeTableColumn<DisplayFlightPassengerInfo, String> treeTableColumn8 = new TreeTableColumn<>("Flight\nDuration");
 
 		treeTableColumn1.setCellValueFactory(new TreeItemPropertyValueFactory<>("flightID"));
 		treeTableColumn2_1.setCellValueFactory(new TreeItemPropertyValueFactory<>("numOfPassengers"));
@@ -546,10 +546,12 @@ public class AppFlightsFlowAnalyser extends Application {
         }	
         trTblVwPassengerMileage.setRoot(trItmTop);
         trTblVwPassengerMileage.setShowRoot(false);
-        //autoResizeTreeTableViewColumns(trTblVwPassengerMileage);
         
 	}
 	
+	//-------------------------------------------------------------------
+	// Method to kick start all the MapReduce jobs
+	//-------------------------------------------------------------------
 	public static void startMapReduceJobs(String sAirportDataFile, String sPassengerDataFile) {
 		
 		// Set mouse pointer to Cursor.WAIT
@@ -597,11 +599,11 @@ public class AppFlightsFlowAnalyser extends Application {
 		Utilities.setCursorDefault(stgPrimaryStage.getScene());
 	}
 	
-	// Job 1: Flights from each airport
+	//-------------------------------------------------------------------	
+	// Job 1: Flights from each airport (Objective a)
+	//-------------------------------------------------------------------
 	public static void runJob1(ArrayList<String> inFiles) {
-		//-------------------------------------------------------------------
-		// Create a job for objective (a)
-		//-------------------------------------------------------------------
+		
 		Config config = new Config(inFiles, AirportFlightMapper.class, AirportFlightReducer.class, false);
 		// add the airport data into the config
 
@@ -615,6 +617,80 @@ public class AppFlightsFlowAnalyser extends Application {
 			e.printStackTrace();
 		}
 		
+		// Export the job results to files
+		exportJob1Results(jobAirportFlights);
+		
+		// Display the job result in the GUI for the objective (a)
+		displayAirportsAnalysis(jobAirportFlights.getJobResult("FlightCount"));
+		
+		
+	}
+	
+	//-------------------------------------------------------------------
+	// Job 2: List of unused airport (Objective a)
+	//-------------------------------------------------------------------
+	public static void runJob2(ArrayList<String> inFiles) {	
+		
+		Config config = new Config(inFiles, UnusedAirportMapper.class, UnusedAirportReducer.class, true);
+		Job jobUnusedAirports = new Job(config);
+		jobUnusedAirports.addRefData("AirportInfo", ((HashMap)dictAirportInfo).clone());
+		try {
+			jobUnusedAirports.run();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	
+		exportJob2Results(jobUnusedAirports);
+	        
+		displayUnusedAirportsAnalysis(jobUnusedAirports.getJobResult());  
+	}
+
+	//-------------------------------------------------------------------
+	// Job 3: List of flights and their passengers (Objective b)
+	//-------------------------------------------------------------------
+	public static void runJob3(ArrayList<String> inFiles) {
+
+		Config config = new Config(inFiles, FlightPassengerMapper.class, FlightPassengerReducer.class, false);
+		Job jobFlightPassengers = new Job(config);
+		jobFlightPassengers.addRefData("AirportInfo", ((HashMap) dictAirportInfo).clone());
+		
+		try {
+			jobFlightPassengers.run();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	
+		exportJob3Results(jobFlightPassengers);
+	    
+		displayFlightsAnalysis(jobFlightPassengers.getJobResult());
+	
+	}
+
+	//-------------------------------------------------------------------
+	// Job 4: List of passengers with their total flight mileages
+	//-------------------------------------------------------------------
+	public static void runJob4(ArrayList<String> inFiles) {
+
+		Config config = new Config(inFiles, PassengerMileageMapper.class, PassengerMileageReducer.class, false);
+		Job jobPassengerMileage = new Job(config);
+		jobPassengerMileage.addRefData("AirportInfo", ((HashMap) dictAirportInfo).clone());
+		try {
+			jobPassengerMileage.addJobResultBucket("FlightMileage");
+			jobPassengerMileage.addJobResultBucket("PassengerMileage");	
+			jobPassengerMileage.run();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		exportJob4Results(jobPassengerMileage);
+	       
+		displayPassengersAnalysis(jobPassengerMileage.getJobResult("FlightMileage"), jobPassengerMileage.getJobResult("PassengerMileage"));
+	}
+
+	public static void exportJob1Results(Job jobAirportFlights) {
 		// Write output file #1.1
 		// Write the list of used airports to output file for job chaining
         Iterator iterator1 = jobAirportFlights.getJobResult("FlightCount").entrySet().iterator();
@@ -627,8 +703,9 @@ public class AppFlightsFlowAnalyser extends Application {
 			e.printStackTrace();
 		}
 		
-		// Print column headers into the output file
+		// Write column headers into the output file
 		writer1.println("AirportCode,AirportName,NumOfFlights");
+		
 	    while(iterator1.hasNext()) {
 	            Map.Entry<Object, Integer> entry = (Map.Entry) iterator1.next();
 	            writer1.println(entry.getKey() + "," + getAirportName((String)entry.getKey()) + "," + entry.getValue());
@@ -647,6 +724,10 @@ public class AppFlightsFlowAnalyser extends Application {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		// Write column headers into the output file
+		writer2.println("AirportFromCode,AirportToCode");
+		
 	    while(iterator2.hasNext()) {
 	            Map.Entry<Object, FlightTripInfo> entry = (Map.Entry) iterator2.next();
 	            FlightTripInfo objFTI = entry.getValue();
@@ -655,28 +736,10 @@ public class AppFlightsFlowAnalyser extends Application {
 	        } 
         writer2.close();
         
-		// Output for the objective (a)
-		displayAirportsAnalysis(jobAirportFlights.getJobResult("FlightCount"));
-		
-		
 	}
 	
 	
-	// Job 2: List of unused airport
-	public static void runJob2(ArrayList<String> inFiles) {	
-		//-------------------------------------------------------------------
-		// Create a job for objective (a) Unused airports
-		//-------------------------------------------------------------------
-		Config config = new Config(inFiles, UnusedAirportMapper.class, UnusedAirportReducer.class, true);
-		Job jobUnusedAirports = new Job(config);
-		jobUnusedAirports.addRefData("AirportInfo", ((HashMap)dictAirportInfo).clone());
-		try {
-			jobUnusedAirports.run();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+	public static void exportJob2Results(Job jobUnusedAirports) {
 		
 		// Write output file #2
         Iterator iterator1 = jobUnusedAirports.getJobResult().entrySet().iterator();
@@ -701,27 +764,10 @@ public class AppFlightsFlowAnalyser extends Application {
 	    		writer1.println(sAirportCode + "," + getAirportName(sAirportCode));
 	    	}
 	    } 
-        writer1.close();
-        
-	        
-		displayUnusedAirportsAnalysis(jobUnusedAirports.getJobResult());  
+        writer1.close();		
 	}
 	
-	
-	public static void runJob3(ArrayList<String> inFiles) {
-		//-------------------------------------------------------------------
-		// Create a job for objective (b): List of flights
-		//-------------------------------------------------------------------
-		Config config = new Config(inFiles, FlightPassengerMapper.class, FlightPassengerReducer.class, false);
-		Job jobFlightPassengers = new Job(config);
-		jobFlightPassengers.addRefData("AirportInfo", ((HashMap) dictAirportInfo).clone());
-		
-		try {
-			jobFlightPassengers.run();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public static void exportJob3Results(Job jobFlightPassengers) {
 		
 		// Write output file #3
         Iterator iterator1 = jobFlightPassengers.getJobResult().entrySet().iterator();
@@ -735,7 +781,8 @@ public class AppFlightsFlowAnalyser extends Application {
 		}
 		
 		// Print column headers into the output file
-		writer1.println("FlightID,TotPassenger,PassengerID,AirportFromCode,AirportFromName,AirportToCode,AirportToName,FlightMileage,DepTime,ArrTime,FlightTime");
+		writer1.println("FlightID,TotPassenger,PassengerID,AirportFromCode,AirportFromName,AirportToCode,AirportToName,FlightMileage,DepTime,ArrTime,FlightDuration");
+
 		Iterator iterator = jobFlightPassengers.getJobResult().entrySet().iterator();
         while(iterator.hasNext()) {
             Map.Entry<Object, List<Object>> entry = (Map.Entry) iterator.next();
@@ -758,29 +805,11 @@ public class AppFlightsFlowAnalyser extends Application {
             }    		
         } 
         writer1.close();
-        
-		displayFlightsAnalysis(jobFlightPassengers.getJobResult());
-
 	}
 	
-	public static void runJob4(ArrayList<String> inFiles) {
-		//-------------------------------------------------------------------
-		// Create a job for objective(d) Passenger having earned the highest air miles
-		//-------------------------------------------------------------------
-		Config config = new Config(inFiles, PassengerMileageMapper.class, PassengerMileageReducer.class, false);
-		Job jobPassengerMileage = new Job(config);
-		jobPassengerMileage.addRefData("AirportInfo", ((HashMap) dictAirportInfo).clone());
-		try {
-			jobPassengerMileage.addJobResultBucket("FlightMileage");
-			jobPassengerMileage.addJobResultBucket("PassengerMileage");	
-			jobPassengerMileage.run();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		// Write output file #4
-        
+	public static void exportJob4Results(Job jobPassengerMileage) {
+
+		// Write output file #4        
         PrintWriter writer1 = null;
 		try {
 			writer1 = new PrintWriter(new File(configProps.getProperty("job4.outputfile.1")));
@@ -815,9 +844,8 @@ public class AppFlightsFlowAnalyser extends Application {
             }
         }	
 		writer1.close();
-	       
-		displayPassengersAnalysis(jobPassengerMileage.getJobResult("FlightMileage"), jobPassengerMileage.getJobResult("PassengerMileage"));
 	}
+	
 	
 	public static String getAirportName(String sCode) {
 		if (dictAirportInfo!=null) {

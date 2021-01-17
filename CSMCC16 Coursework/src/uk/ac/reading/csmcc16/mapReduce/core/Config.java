@@ -23,7 +23,7 @@ public class Config {
     // Classes to implement job-specific map and reduce functions
     private Class mapper, reducer;
     
-    private static boolean hasHeader;
+    private boolean hasHeader;
 
     // Constructor
     public Config(List<String> inFiles, Class mapper, Class reducer, boolean hasHeader) {
@@ -45,7 +45,7 @@ public class Config {
     }
 
     // Generic file reader returning an iterator cycling through each line of the specified file
-    protected static Iterator read(File file) throws IOException {
+    protected Iterator read(File file) throws IOException {
         List record = new ArrayList();
         BufferedReader br = new BufferedReader(new FileReader(file));
         String line;
