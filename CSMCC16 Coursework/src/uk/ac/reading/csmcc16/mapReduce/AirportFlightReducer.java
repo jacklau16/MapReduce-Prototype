@@ -1,11 +1,7 @@
 package uk.ac.reading.csmcc16.mapReduce;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import uk.ac.reading.csmcc16.FlightTripInfo;
@@ -16,6 +12,11 @@ public class AirportFlightReducer extends Reducer {
 	@Override
 	public void reduce(Object key, List values) {
 
+		//-------------------------------------------------------------------
+		// Semantics Check
+		//-------------------------------------------------------------------	
+		//(a) Use a Set object to store the flight IDs from an airport to ensure 
+		//    uniqueness and correct count
 		Set<String> setFlights = new HashSet<String>();
 		
 		for (int i=0; i<values.size();i++) {

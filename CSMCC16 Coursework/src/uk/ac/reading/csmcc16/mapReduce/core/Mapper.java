@@ -10,9 +10,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import uk.ac.reading.csmcc16.Logger;
+
 public abstract class Mapper implements Runnable {
 	
-	File inputFile;
+	protected File inputFile;
+	boolean skipHeader = false;
 	
 //	static ConcurrentHashMap<String, Object> mapKeyValuePairs = new ConcurrentHashMap<String, Object>();
 	ConcurrentHashMap<Object, Object> mapKeyValuePairs;
@@ -26,6 +29,10 @@ public abstract class Mapper implements Runnable {
     //TODO:    for loop to iterate each line of the provided file, and call map()
 		// Map Function:  key:Flight id, value: Passenger id, ...
 		try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
+			if (skipHeader) { // skip the column header if needed
+				br.readLine();
+				Logger.getInstance().logDebug(getClass().getSimpleName()+": skipped header row.");
+			}
 		    String line;
 		    while ((line = br.readLine()) != null) {
 		    	map(line);
@@ -44,9 +51,6 @@ public abstract class Mapper implements Runnable {
     // Map <KEY, List<VALUES>>
     // Shuffle function is performed here
     public void emitIntermediate(Object key, Object value) {
-//    	String threadName = Thread.currentThread().getName();
-    	
- //   	System.out.println("[" + threadName + "] called Mapper.emitIntermediate()");
 		if (mapKeyValuePairs.containsKey(key)) {
 			CopyOnWriteArrayList<Object>valArray = (CopyOnWriteArrayList)mapKeyValuePairs.get(key);
 			valArray.add(value);
@@ -59,6 +63,10 @@ public abstract class Mapper implements Runnable {
 
 	public void setFile(File file) {
 		this.inputFile = file;
+	}
+	
+	public void setSkipHeader(boolean bSkipHeader) {
+		this.skipHeader = bSkipHeader;
 	}
 	
 	public ConcurrentHashMap getKeyValuePairs() {

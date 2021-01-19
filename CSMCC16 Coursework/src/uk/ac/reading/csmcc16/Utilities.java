@@ -4,7 +4,6 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -13,9 +12,11 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
@@ -27,7 +28,33 @@ import javafx.scene.text.Text;
 
 public class Utilities {
 
-	public static double getTraveledDistance(double latitudeFrom, double longitudeFrom, double latitudeTo, double longitudeTo) {
+	// Regular expressions for checking the format correctness of each input fields
+	public static final String FLD_FMT_AIRPORTNAME = "^[A-Z ]{3,20}$";
+	public static final String FLD_FMT_AIRPORTCODE = "^[A-Z]{3}$";
+	public static final String FLD_FMT_LATITUDE = "^-?\\d{3,13}$|^-?(?=\\d+\\.\\d+$).{4,14}$";
+	public static final String FLD_FMT_LONGITUDE = "^-?\\d{3,13}$|^-?(?=\\d+\\.\\d+$).{4,14}$";
+	public static final String FLD_FMT_PASSENGERID = "^[A-Z]{3}\\d{4}[A-Z]{2}\\d$";
+	public static final String FLD_FMT_FLIGHTID = "^[A-Z]{3}\\d{4}[A-Z]$";
+	public static final String FLD_FMT_DEPARTURETIME = "^\\d{10}$";
+	public static final String FLD_FMT_FLIGHTTIME = "^\\d{1,4}$";	
+	
+	private static boolean bErrorStatus = false;
+	
+	public static void setErrorStatus(boolean bStatus) {
+		bErrorStatus = bStatus;
+	}
+
+	public static void reportRowSyntaxError(String className, String fileName, String errMsg, String colEntry) {
+		Logger.getInstance().logError(className+": "+errMsg+"\n"+
+				"Input record skipped in file '"+fileName+"': " + colEntry);
+		setErrorStatus(true);
+	}
+	
+	public static boolean getErrorStatus() {
+		return bErrorStatus;
+	}
+	
+	public static double calculateTraveledDistance(double latitudeFrom, double longitudeFrom, double latitudeTo, double longitudeTo) {
 		// Calculate the mileage of the trip using Haversine formula, then convert to nautical miles
 		// References: 
 		// (i) https://en.wikipedia.org/wiki/Haversine_formula
@@ -53,6 +80,50 @@ public class Utilities {
 		return d / 1.852;
 	}
 	
+	// Routine for calculating Levenshtein Distance of two strings
+	public static int calculateLevenshteinDistance(String a, String b) {
+		a = a.toLowerCase();
+		b = b.toLowerCase();
+		// i == 0
+		int [] costs = new int [b.length() + 1];
+		for (int j = 0; j < costs.length; j++)
+			costs[j] = j;
+		for (int i = 1; i <= a.length(); i++) {
+			// j == 0; nw = lev(i - 1, j)
+			costs[0] = i;
+			int nw = i - 1;
+			for (int j = 1; j <= b.length(); j++) {
+				int cj = Math.min(1 + Math.min(costs[j], costs[j - 1]), a.charAt(i - 1) == b.charAt(j - 1) ? nw : nw + 1);
+				nw = costs[j];
+				costs[j] = cj;
+			}
+		}
+		return costs[b.length()];
+	}
+
+	public static List getSuggestedAirportCodes(String input) {
+		Map<String, Integer> mapResult = new <String, Integer>HashMap();
+		Iterator iter = AppFlightsFlowAnalyser.dictAirportInfo.keySet().iterator();
+		int minDistance = 9999;
+		
+		while (iter.hasNext()) {
+			String sValidAirportCode = (String)iter.next();
+			int levenshteinDistance = calculateLevenshteinDistance(input, sValidAirportCode);
+			mapResult.put(sValidAirportCode, Integer.valueOf(levenshteinDistance));
+			if (levenshteinDistance < minDistance)
+				minDistance = levenshteinDistance;
+		}
+		
+		Iterator iter2 = mapResult.entrySet().iterator();
+		List<String> lstResult = new<String> ArrayList();
+		while (iter2.hasNext()) {
+			Map.Entry<Object, Integer> entry = (Map.Entry) iter2.next();
+			String key = (String) entry.getKey();
+			if (entry.getValue().intValue()==minDistance)
+				lstResult.add(key);
+		}
+		return lstResult;
+	}
 	
 	public static List<File> splitFile(File file, int sizeOfFileInBytes) throws IOException {
 	    int counter = 1;
@@ -91,7 +162,6 @@ public class Utilities {
 		try {
 			prop = new Properties();
  
-			//inputStream = FlightsFlowAnalyser.class.getResourceAsStream(propFileName);
 			inputStream = new FileInputStream(propFileName);
  
 			if (inputStream != null)
@@ -115,32 +185,50 @@ public class Utilities {
 		    String line;
 		    while ((line = br.readLine()) != null) {
 				String cols[] = line.split(",");
+				int expectedColumns = 4;
+
+				// Syntax checking
+				// (a) Check if total number of fields parsed is expected
+				if (cols.length != expectedColumns) {
+					Utilities.reportRowSyntaxError("Utilities.loadAirportData", file, 
+							"Total number of fields should be "+expectedColumns+".", line);
+					continue;
+				}
 				double aLat, aLong;
 				String airportCode;
 				try {
-					airportCode = cols[1];
+					airportCode = cols[1].trim();
+					
+					if (!airportCode.matches(Utilities.FLD_FMT_AIRPORTCODE)) {
+						Utilities.reportRowSyntaxError("Utilities.loadAirportData", file, 
+								"AirportCode has invalid format.", line);
+						continue;
+					}
+					if (!cols[2].trim().matches(Utilities.FLD_FMT_LATITUDE)) {
+						Utilities.reportRowSyntaxError("Utilities.loadAirportData", file, 
+								"Latitude has invalid format.", line);
+						continue;
+					}
+					if (!cols[3].trim().matches(Utilities.FLD_FMT_LONGITUDE)) {
+						Utilities.reportRowSyntaxError("Utilities.loadAirportData", file, 
+								"Longitude has invalid format.", line);
+						continue;
+					}
 					aLat = Double.parseDouble(cols[2]);
 					aLong = Double.parseDouble(cols[3]);
 					
 					AirportInfo airportInfo = new AirportInfo(cols[0], cols[1], aLat, aLong);
 					dictAirportInfo.put(airportCode, airportInfo);
-					// Add every airport code into the set first
-//					usedAirports.add(airportCode);
-				} catch (NumberFormatException e) {
-					// skip this record
-					// TODO add error logging
 				} catch (Exception e) {
 					// skip this record
-					//System.err.println("Load Airport Data: Error in parsing a record, it is skipped.");
-					Logger.getInstance().logError("Load Airport Data: Error in parsing a record, it is skipped.");
+					Utilities.reportRowSyntaxError("Utilities.loadAirportData", file, 
+							e.getMessage(), line);
+					//Logger.getInstance().logError("Load Airport Data: Error in parsing a record, it is skipped.");
 				}
 		    }
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (Exception e) {
+			Logger.getInstance().logError("Load Airport Data: " + e.getMessage());
+			setErrorStatus(true);
 		}		
 		
 		return dictAirportInfo;
@@ -228,8 +316,7 @@ public class Utilities {
 		}
 	}
 	
-	public static void setCursorWait(final Scene scene)
-	{
+	public static void setCursorWait(final Scene scene) {
 	    Runnable r=new Runnable() {
 
 	        @Override
@@ -241,8 +328,7 @@ public class Utilities {
 	    t.start();
 	}
 	
-	public static void setCursorDefault(final Scene scene)
-	{
+	public static void setCursorDefault(final Scene scene) {
 	        Runnable r=new Runnable() {
 
 	        @Override

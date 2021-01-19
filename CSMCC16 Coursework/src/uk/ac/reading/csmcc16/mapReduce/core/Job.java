@@ -46,6 +46,8 @@ public class Job {
             mapper = config.getMapperInstance(file);
             mapper.setRefData(mapRefData);
             mapper.setKeyValuePairs(mapKeyValuePairs);
+            if(i==1) // For the first file partition, skip column header if needed
+            	mapper.setSkipHeader(config.getSkipHeader());
             Thread thread = new Thread(mapper, "Thread " + i++);
             thread.start();
             threadList.add(thread);      

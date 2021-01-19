@@ -1,12 +1,13 @@
 package uk.ac.reading.csmcc16;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class FlightPassengerInfo {
 	
 	String _flightID;
-	List _passengerID = new ArrayList();
+//	List _passengerID = new ArrayList();
+	Set _passengerID = new HashSet();
 	String _airportFrom;
 	String _airportTo;
 	String _depTime;
@@ -22,7 +23,7 @@ public class FlightPassengerInfo {
 		this._flightID = flightID;
 	}
 
-	public List getPassengers() {
+	public Set getPassengers() {
 		return _passengerID;
 	}
 	

@@ -1,10 +1,11 @@
 package uk.ac.reading.csmcc16.mapReduce;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import uk.ac.reading.csmcc16.*;
 import uk.ac.reading.csmcc16.mapReduce.core.*;
@@ -13,13 +14,16 @@ public class PassengerMileageReducer extends Reducer {
 
 	@Override
 	public void reduce(Object key, List values) {
-		// TODO Auto-generated method stub
+
 		double totTraveledDistance = 0.0;
-//		System.out.println("[" + key + "]: " + values.size());
 		
 		Map mapAirportInfo = (Map) this.getRefData().get("AirportInfo");
 		// Create the output object
 		FlightPassengerInfo objFP = null;
+		
+		Set<String> setFlights = new HashSet<String>();
+		List<PassengerTripInfo>lstPTI = new <PassengerTripInfo>CopyOnWriteArrayList();
+		
 		for (int i=0; i<values.size();i++) {
 			PassengerTripInfo objPD = (PassengerTripInfo)values.get(i);
 			// TODO: will there be duplicated passenger?
@@ -28,36 +32,30 @@ public class PassengerMileageReducer extends Reducer {
 			String sAirportFrom = objPD.getAirportFrom();
 			String sAirportTo = objPD.getAirportTo();
 			
-			AirportInfo objAirportFrom = (AirportInfo) mapAirportInfo.get(sAirportFrom);
-			AirportInfo objAirportTo = (AirportInfo) mapAirportInfo.get(sAirportTo);
+			//-------------------------------------------------------------------
+			// Semantics Check
+			//-------------------------------------------------------------------	
+			//(a) Use a Set object to store the flight IDs of a passenger to ensure 
+			//    uniqueness and correct count
+			if (setFlights.add(flightID)) {
+				AirportInfo objAirportFrom = (AirportInfo) mapAirportInfo.get(sAirportFrom);
+				AirportInfo objAirportTo = (AirportInfo) mapAirportInfo.get(sAirportTo);
 			
-			double dTraveledDistance = Utilities.getTraveledDistance(objAirportFrom.getLatitude(), objAirportFrom.getLongitude(), 
+				double dTraveledDistance = Utilities.calculateTraveledDistance(objAirportFrom.getLatitude(), objAirportFrom.getLongitude(), 
 					objAirportTo.getLatitude(), objAirportTo.getLongitude());
 
-			objPD.setFlightMileage(dTraveledDistance);		
-			
-//			System.out.println(passengerID + "," +
-//					sAirportFrom + "," +
-//					sAirportTo + "," +
-//					dTraveledDistance
-//					);
-			totTraveledDistance = totTraveledDistance + dTraveledDistance;
-/*			
- * 
-			// Create next input list for calculating air miles
-			PassengerTripInfo valObj = new PassengerTripInfo(passengerID, airportFrom, airportTo);
-			
-			if (mapPassengerTripInfo.containsKey(passengerID)) {
-				ArrayList<Object>valArray = (ArrayList)mapPassengerTripInfo.get(passengerID);
-				valArray.add(valObj);
+				objPD.setFlightMileage(dTraveledDistance);		
+				lstPTI.add(objPD);
+				totTraveledDistance = totTraveledDistance + dTraveledDistance;
 			} else {
-				ArrayList<Object>valArray = new ArrayList<Object>();
-				valArray.add(valObj);				
-				mapPassengerTripInfo.put(passengerID, valArray);
+				// Duplicated FlightID
+				Logger.getInstance().logWarning(getClass().getSimpleName()+": Duplicated FlightID '"+flightID+"', record skipped.");
+				Utilities.setErrorStatus(true);
 			}
-*/	
 		}
-		this.emit("FlightMileage", key, values);
+		
+//		this.emit("FlightMileage", key, values);
+		this.emit("FlightMileage", key, lstPTI);
 		this.emit("PassengerMileage", key, Double.valueOf(totTraveledDistance));
 	}
 

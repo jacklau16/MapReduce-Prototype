@@ -16,17 +16,13 @@ public class FlightPassengerReducer extends Reducer {
 
 	@Override
 	public void reduce(Object key, List values) {
-		// TODO Auto-generated method stub
-		int passengerCount = 0;
-//		System.out.println("[" + key + "]: " + values.size());
+
 		// Create the output object
 		FlightPassengerInfo objFP = null;	
 		Map mapAirportInfo = (Map) this.getRefData().get("AirportInfo");
 		double dTraveledDistance = 0.0;
 		for (int i=0; i<values.size();i++) {
 			PassengerTripInfo objPD = (PassengerTripInfo)values.get(i);
-			// TODO: will there be duplicated passenger?
-			passengerCount++;
 			String flightID = (String)key;
 			String passengerID = objPD.getPassengerID();
 			String airportFrom = objPD.getAirportFrom();
@@ -37,10 +33,16 @@ public class FlightPassengerReducer extends Reducer {
 			AirportInfo objAirportFrom = (AirportInfo) mapAirportInfo.get(airportFrom);
 			AirportInfo objAirportTo = (AirportInfo) mapAirportInfo.get(airportTo);
 			
-			dTraveledDistance = Utilities.getTraveledDistance(objAirportFrom.getLatitude(), objAirportFrom.getLongitude(), 
+			dTraveledDistance = Utilities.calculateTraveledDistance(objAirportFrom.getLatitude(), objAirportFrom.getLongitude(), 
 					objAirportTo.getLatitude(), objAirportTo.getLongitude());
 			if (i==0)
 				 objFP = new FlightPassengerInfo(flightID, airportFrom, airportTo, depTime, arrTime, flightTime, dTraveledDistance);	
+
+			//-------------------------------------------------------------------
+			// Semantics Check
+			//-------------------------------------------------------------------	
+			//(a) Utilising the Set object inside the FlightPassengerInfo class
+			//    to store the Passenger IDs of a flight to ensure uniqueness and correct count			
 			objFP.addPassenger(passengerID);			
 		}
 		

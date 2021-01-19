@@ -33,12 +33,15 @@ public class Logger {
     }
 
     public boolean writeMessage(String msg) {
-    	if (textArea!=null) {
-    		textArea.appendText(msg);
-    		return true;
-    	} else {
-    		System.err.println(getTimeStamp() + "Logger: TextArea not initialised.");
-    		return false;
+    	// TextArea is not thread-safe, therefore enclose with synchroniszed block
+    	synchronized(textArea) {
+    		if (textArea!=null) {
+    			textArea.appendText(msg);
+    			return true;
+    		} else {
+    			System.err.println(getTimeStamp() + "Logger: TextArea not initialised.");
+    			return false;
+    		}
     	}
     }
 

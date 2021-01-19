@@ -35,10 +35,6 @@ public class Config {
 
     // Initialise a job using the provided arguments
     private void init(List<String> inFiles) {
-  //      if(inFiles == null || inFiles.length == 0) {
-  //          System.out.println("Usage: java MapReduce <files>\n\tProcess a set of files listed by <files> using a trivial MapReduce implementation.");
-  //          System.exit(1);
-  //      }
         this.files = new File[inFiles.size()];
         for(int i=0; i<inFiles.size(); i++)
             this.files[i] = new File(inFiles.get(i));
@@ -62,6 +58,10 @@ public class Config {
         return this.files;
     }
 
+    protected boolean getSkipHeader() {
+    	return this.hasHeader;
+    }
+    
     // Using reflection get an instance of the mapper operating on a specified file
     protected Mapper getMapperInstance(File file) throws Exception {
         Mapper mapper = (Mapper) this.mapper.getConstructor().newInstance();

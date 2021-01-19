@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javafx.application.Application;
@@ -69,7 +70,8 @@ public class AppFlightsFlowAnalyser extends Application {
 
 	static Properties configProps;
 	static String propFileName = "csmcc16.properties";
-	static Map<String, Object> dictAirportInfo = new HashMap<String, Object>();
+	public static Map<String, Object> dictAirportInfo = new HashMap<String, Object>();
+	public static Set<String> setInvalidAirportCode = ConcurrentHashMap.newKeySet();
 	
 	// JavaFX objects
 	TextField txtFldAirportDataFile;
@@ -96,6 +98,11 @@ public class AppFlightsFlowAnalyser extends Application {
 			System.err.println("Exception in loading properties file: " + e);			
 			return;
 		}
+		
+		// Set the logger debug mode and verbose mode based on the properties file
+		Logger.getInstance().setDebugMode(Boolean.getBoolean(configProps.getProperty("log.debug.msg", "false")));
+		Logger.getInstance().setVerboseMode(Boolean.getBoolean(configProps.getProperty("log.verbose.msg", "false")));		
+		
 		
 		// JavaFX will then call start(Stage) in this class		
 		launch(args);
@@ -423,7 +430,9 @@ public class AppFlightsFlowAnalyser extends Application {
 		txtAreaLogging.setPrefHeight(400);
 		txtAreaLogging.setFont(Font.font("Courier New", FontWeight.BOLD, 14));
 		
-		Logger.getInstance().setTextArea(txtAreaLogging);		
+		Logger.getInstance().setTextArea(txtAreaLogging);	
+		
+		Logger.getInstance().setDebugMode(true);
 
 		return (new VBox(txtAreaLogging));
 	}
@@ -492,14 +501,22 @@ public class AppFlightsFlowAnalyser extends Application {
 			
         	TreeItem trItmFlight = new TreeItem(objDisplayFlight);
         	
-            List passengers = objFP.getPassengers();
-            for (int i=0;i<passengers.size();i++) {
-            	DisplayFlightPassengerInfo objDisplayPassenger = new DisplayFlightPassengerInfo();          	
-            	objDisplayPassenger.setPassengerID((String)passengers.get(i));
+           // List passengers = objFP.getPassengers();
+//            for (int i=0;i<passengers.size();i++) {
+//            	DisplayFlightPassengerInfo objDisplayPassenger = new DisplayFlightPassengerInfo();          	
+//            	objDisplayPassenger.setPassengerID((String)passengers.get(i));
+//            	TreeItem trItmPassenger = new TreeItem(objDisplayPassenger);
+//            	trItmFlight.getChildren().add(trItmPassenger);
+//            }
+            
+            Iterator passengers = objFP.getPassengers().iterator();
+    	    while(passengers.hasNext()) {
+	            String passengerID = (String) passengers.next();
+	           	DisplayFlightPassengerInfo objDisplayPassenger = new DisplayFlightPassengerInfo();          	
+            	objDisplayPassenger.setPassengerID(passengerID);
             	TreeItem trItmPassenger = new TreeItem(objDisplayPassenger);
             	trItmFlight.getChildren().add(trItmPassenger);
-            }
-            
+    	    } 
     		trItmTop.getChildren().add(trItmFlight);
     		
         } 
@@ -557,6 +574,9 @@ public class AppFlightsFlowAnalyser extends Application {
 		// Set mouse pointer to Cursor.WAIT
 		Utilities.setCursorWait(stgPrimaryStage.getScene());
 		
+		// Reset the "Has error" status to false
+		Utilities.setErrorStatus(false);
+		
 		// Load the Airport data from file
 		dictAirportInfo = Utilities.loadAirportData(sAirportDataFile);		
 		
@@ -597,6 +617,13 @@ public class AppFlightsFlowAnalyser extends Application {
 		
 		// Set mouse pointer back to Cursor.DEFAULT
 		Utilities.setCursorDefault(stgPrimaryStage.getScene());
+		
+		// If error/warning occurred during running the jobs, alert user to check the log messages
+		if (Utilities.getErrorStatus()) {
+			Alert a = new Alert(AlertType.WARNING);
+			a.setContentText("Error(s) or warning(s) raised when running the jobs, please check the Log Messages.");
+            a.show();
+		}
 	}
 	
 	//-------------------------------------------------------------------	
@@ -608,9 +635,13 @@ public class AppFlightsFlowAnalyser extends Application {
 		// add the airport data into the config
 
 		Job jobAirportFlights = new Job(config);
+		jobAirportFlights.addRefData("AirportInfo", ((HashMap)dictAirportInfo).clone());
+		
+		setInvalidAirportCode.clear();
+		
 		try {
 			jobAirportFlights.addJobResultBucket("UsedAirports");
-			jobAirportFlights.addJobResultBucket("FlightCount");			
+			jobAirportFlights.addJobResultBucket("FlightCount");	
 			jobAirportFlights.run();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -621,8 +652,7 @@ public class AppFlightsFlowAnalyser extends Application {
 		exportJob1Results(jobAirportFlights);
 		
 		// Display the job result in the GUI for the objective (a)
-		displayAirportsAnalysis(jobAirportFlights.getJobResult("FlightCount"));
-		
+		displayAirportsAnalysis(jobAirportFlights.getJobResult("FlightCount"));		
 		
 	}
 	
@@ -735,7 +765,36 @@ public class AppFlightsFlowAnalyser extends Application {
 	            writer2.println(objFTI.getAirportFrom() + "," + objFTI.getAirportTo());
 	        } 
         writer2.close();
+
         
+		// Perform error correction suggestion on invalid airport codes
+        String sOutFile = configProps.getProperty("job1.datacorrection.suggestion.file", "5_airportcode_correction_suggestion.txt");
+        PrintWriter writer3 = null;
+		try {
+			writer3 = new PrintWriter(new File(sOutFile));
+	        Iterator iter = setInvalidAirportCode.iterator();
+	        while (iter.hasNext()) {
+	        	String sInvalidCode = (String)iter.next();
+	            List lstSuggestions = Utilities.getSuggestedAirportCodes(sInvalidCode);
+	        	writer3.print("Invalid Airport Code: '" + sInvalidCode + 
+	        			"', Suggested Code(s): ");
+	        	if(lstSuggestions.size()==0)
+	        		writer3.println("N/A");
+	        	else {
+	        		for (int i=0; i<lstSuggestions.size(); i++) {
+	        			writer3.print(lstSuggestions.get(i));
+	        			if(i<lstSuggestions.size()-1)
+	        				writer3.print(", ");
+	        			else
+	        				writer3.println("");
+	        		}
+	        	}
+	        }
+	        writer3.close();
+		} catch (FileNotFoundException e) {
+			System.err.println(e);
+		}
+        		
 	}
 	
 	
@@ -799,10 +858,16 @@ public class AppFlightsFlowAnalyser extends Application {
             writer1.print(objFP.getArrTime()+",");
             writer1.println(objFP.getFlightTime());       
 			     	
-            List passengers = objFP.getPassengers();
-            for (int i=0;i<passengers.size();i++) {          	
-            	writer1.println(",,"+passengers.get(i));
-            }    		
+//            List passengers = objFP.getPassengers();
+//            for (int i=0;i<passengers.size();i++) {          	
+//            	writer1.println(",,"+passengers.get(i));
+//            }  
+            
+            Iterator passengers = objFP.getPassengers().iterator();
+    	    while(passengers.hasNext()) {
+    	    	String passengerID = (String) passengers.next();
+              	writer1.println(",,"+passengerID);
+    	    }
         } 
         writer1.close();
 	}
