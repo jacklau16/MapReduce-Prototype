@@ -18,7 +18,7 @@ public class UnusedAirportMapper extends Mapper {
 		// (a) Check if total number of fields parsed is expected
 		if (cols.length != expectedColumns) {
 			Utilities.reportRowSyntaxError(getClass().getSimpleName(), this.inputFile.getName(), 
-					"Total number of fields should be "+expectedColumns+".", (String)value);
+					"Total number of fields should be "+expectedColumns+", but got "+cols.length+".", (String)value);
 			return;
 		}
 		

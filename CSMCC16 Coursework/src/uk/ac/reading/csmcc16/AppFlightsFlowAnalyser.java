@@ -671,8 +671,7 @@ public class AppFlightsFlowAnalyser extends Application {
 			jobAirportFlights.addJobResultBucket("FlightCount");	
 			jobAirportFlights.run();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.getInstance().logError(e.getMessage());
 		}
 		
 		// Export the job results to files
@@ -694,8 +693,7 @@ public class AppFlightsFlowAnalyser extends Application {
 		try {
 			jobUnusedAirports.run();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.getInstance().logError(e.getMessage());
 		}
 	
 		exportJob2Results(jobUnusedAirports);
@@ -715,8 +713,7 @@ public class AppFlightsFlowAnalyser extends Application {
 		try {
 			jobFlightPassengers.run();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.getInstance().logError(e.getMessage());
 		}
 	
 		exportJob3Results(jobFlightPassengers);
@@ -738,8 +735,7 @@ public class AppFlightsFlowAnalyser extends Application {
 			jobPassengerMileage.addJobResultBucket("PassengerMileage");	
 			jobPassengerMileage.run();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.getInstance().logError(e.getMessage());
 		}
 		
 		exportJob4Results(jobPassengerMileage);
@@ -756,8 +752,7 @@ public class AppFlightsFlowAnalyser extends Application {
 		try {
 			writer1 = new PrintWriter(new File(configProps.getProperty("job1.outputfile.1")));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.getInstance().logError(e.getMessage());
 		}
 		
 		// Write column headers into the output file
@@ -778,8 +773,7 @@ public class AppFlightsFlowAnalyser extends Application {
 		try {
 			writer2 = new PrintWriter(new File(configProps.getProperty("job1.outputfile.2")));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.getInstance().logError(e.getMessage());
 		}
 		
 		// Write column headers into the output file
@@ -834,8 +828,7 @@ public class AppFlightsFlowAnalyser extends Application {
 		try {
 			writer1 = new PrintWriter(new File(configProps.getProperty("job2.outputfile.1")));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.getInstance().logError(e.getMessage());
 		}
 		
 		// Print column headers into the output file
@@ -862,8 +855,7 @@ public class AppFlightsFlowAnalyser extends Application {
 		try {
 			writer1 = new PrintWriter(new File(configProps.getProperty("job3.outputfile.1")));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.getInstance().logError(e.getMessage());
 		}
 		
 		// Print column headers into the output file
@@ -906,8 +898,7 @@ public class AppFlightsFlowAnalyser extends Application {
 		try {
 			writer1 = new PrintWriter(new File(configProps.getProperty("job4.outputfile.1")));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Logger.getInstance().logError(e.getMessage());
 		}
 		
 		//Sort the passenger records by their total mileage in descending order 

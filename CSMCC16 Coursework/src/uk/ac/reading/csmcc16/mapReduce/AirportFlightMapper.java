@@ -9,8 +9,6 @@ import uk.ac.reading.csmcc16.Utilities;
 import uk.ac.reading.csmcc16.mapReduce.core.*;
 
 public class AirportFlightMapper extends Mapper {
-
-	int rowNum=1;
 	
 	@Override
 	public void map(Object value) {
@@ -25,7 +23,7 @@ public class AirportFlightMapper extends Mapper {
 		// (a) Check if total number of fields parsed is expected
 		if (cols.length != expectedColumns) {
 			Utilities.reportRowSyntaxError(getClass().getSimpleName(), this.inputFile.getName(), 
-					"Total number of fields should be "+expectedColumns+".", (String)value);
+					"Total number of fields should be "+expectedColumns+", but got "+cols.length+".", (String)value);
 			return;
 		}
 		
