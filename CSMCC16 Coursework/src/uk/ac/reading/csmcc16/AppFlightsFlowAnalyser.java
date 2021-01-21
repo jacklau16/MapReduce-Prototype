@@ -158,15 +158,15 @@ public class AppFlightsFlowAnalyser extends Application {
 	    Separator separator1 = new Separator(Orientation.HORIZONTAL);
 	    Separator separator2 = new Separator(Orientation.HORIZONTAL);
 	    
-		Button button1 = new Button("1. Select Airport Data File");
+		Button button1 = new Button("Step 1: Select Airport Data File");
 		button1.setStyle("-fx-font-size: 20; ");
 		button1.setPrefWidth(420);
 
-		Button button2 = new Button("2. Select Passenger Data File");
+		Button button2 = new Button("Step 2: Select Passenger Data File");
 		button2.setStyle("-fx-font-size: 20; ");
 		button2.setPrefWidth(420);
 		
-		Button button3 = new Button("3. Perform Data Analysis");
+		Button button3 = new Button("Step 3: Perform Data Analysis");
 		button3.setStyle("-fx-font-size: 20; ");
 		button3.setPrefWidth(420);
 		button3.setDisable(true);
@@ -599,8 +599,9 @@ public class AppFlightsFlowAnalyser extends Application {
 		// Assign each split file to a mapper instance to run concurrently
 		ArrayList<String> inFilesJob1 = new ArrayList<String>();
 		for (File sf: splitFilesJob1) {
-			System.out.println("Filename:" + sf.getName());
-			inFilesJob1.add(sf.getName());
+			//System.out.println("Filename:" + sf.getName());
+			//inFilesJob1.add(sf.getName());
+			inFilesJob1.add(sf.getAbsolutePath());
 		}
 		
 		runJob1(inFilesJob1);
@@ -625,8 +626,9 @@ public class AppFlightsFlowAnalyser extends Application {
 		ArrayList<String> inFilesJob2 = new ArrayList<String>();
 
 		for (File sf: splitFilesJob2) {
-			System.out.println("Filename:" + sf.getName());
-			inFilesJob2.add(sf.getName());
+			//System.out.println("Filename:" + sf.getName());
+			//inFilesJob2.add(sf.getName());
+			inFilesJob2.add(sf.getAbsolutePath());
 		}
 		
 		runJob2(inFilesJob2);
