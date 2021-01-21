@@ -11,3 +11,6 @@ The "Test Results" folder contains
 (2) AComp_Passenger_data_Analysis.xlsx - Analysis of the passenger data using
     pivot table that is used to cross check with the first 5 files of (1).
     Note that the verification of the calculation of fields are not included.
+
+(3) Screen captures for the application prototype.pdf - showing what the GUI
+    of the prototype looks like with screenshots
