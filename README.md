@@ -12,6 +12,7 @@
 
 **Content**:
 <ul>
-<li>**CSMCC16 Coursework**: Source codes</li>
-<li>**Test Results**: Test results files</li>
-<li>**binary**: Binary distribution files of the prototype</li>
+<li><b>CSMCC16 Coursework</b>: Source codes</li>
+<li><b>Test Results</b>: Test results files</li>
+<li><b>binary</b>: Binary distribution files of the prototype</li>
+</ul>
