@@ -580,40 +580,67 @@ public class AppFlightsFlowAnalyser extends Application {
 		// Load the Airport data from file
 		dictAirportInfo = Utilities.loadAirportData(sAirportDataFile);		
 		
+
+		//---------------------------------------------------------------------------
+		// Run Job 1 for objective (a): No. of flights from each airport
+		//---------------------------------------------------------------------------
+
 		// Split the input file into files with smaller partitions with defined size in properties file
-		File inputFile = new File(sPassengerDataFile);
-		
-		List<File> splitFiles = null;
+		File inputFileJob1 = new File(sPassengerDataFile);
+		List<File> splitFilesJob1 = null;
 		
 		try {	
-			splitFiles = Utilities.splitFile(inputFile, Integer.parseInt(configProps.getProperty("partition.size")));
+			splitFilesJob1 = Utilities.splitFile(inputFileJob1, Integer.parseInt(configProps.getProperty("partition.size")));
 		} catch (Exception e) {
 			Logger.getInstance().logError("Error in splitting the input file: " + e);		
 			return;
 		}
 		
 		// Assign each split file to a mapper instance to run concurrently
-		ArrayList<String> inFiles = new ArrayList<String>();
-		for (File sf: splitFiles) {
+		ArrayList<String> inFilesJob1 = new ArrayList<String>();
+		for (File sf: splitFilesJob1) {
 			System.out.println("Filename:" + sf.getName());
-			inFiles.add(sf.getName());
+			inFilesJob1.add(sf.getName());
 		}
 		
-		ArrayList<String> inFilesJob2 = new ArrayList<String>();
-		inFilesJob2.add(configProps.getProperty("job1.outputfile.2"));
+		runJob1(inFilesJob1);
+
 		
-		// Run Job 1 for objective (a): No. of flights from each airport
-		runJob1(inFiles);
-		
+		//---------------------------------------------------------------------------
 		// Run Job 2 for objective (a): Unused airports
-		runJob2(inFilesJob2);
+		//---------------------------------------------------------------------------
 		
+		// Split the input file into files with smaller partitions with defined size in properties file
+		File inputFileJob2 = new File(configProps.getProperty("job1.outputfile.2"));
+		List<File> splitFilesJob2 = null;
+		
+		try {	
+			splitFilesJob2 = Utilities.splitFile(inputFileJob2, Integer.parseInt(configProps.getProperty("partition.size")));
+		} catch (Exception e) {
+			Logger.getInstance().logError("Error in splitting the input file: " + e);		
+			return;
+		}
+		
+		// Assign each split file to a mapper instance to run concurrently
+		ArrayList<String> inFilesJob2 = new ArrayList<String>();
+
+		for (File sf: splitFilesJob2) {
+			System.out.println("Filename:" + sf.getName());
+			inFilesJob2.add(sf.getName());
+		}
+		
+		runJob2(inFilesJob2);
+
+		//---------------------------------------------------------------------------
 		// Run Job 3 for objective (b): List of flights with passenger list, 
 		// (c): No. of passengers on each flight, and (d): Line-of-sight miles for each flight
-		runJob3(inFiles);
+		//---------------------------------------------------------------------------
+		runJob3(inFilesJob1);
 		
+		//---------------------------------------------------------------------------
 		// Run Job 4 for objective (d) Total mileage traveled by each passenger, and passenger having highest mileage
-		runJob4(inFiles);
+		//---------------------------------------------------------------------------
+		runJob4(inFilesJob1);
 		
 		// Set mouse pointer back to Cursor.DEFAULT
 		Utilities.setCursorDefault(stgPrimaryStage.getScene());

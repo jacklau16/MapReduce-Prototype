@@ -53,13 +53,12 @@ public class Utilities {
 	public static boolean getErrorStatus() {
 		return bErrorStatus;
 	}
-	
-	public static double calculateTraveledDistance(double latitudeFrom, double longitudeFrom, double latitudeTo, double longitudeTo) {
-		// Calculate the mileage of the trip using Haversine formula, then convert to nautical miles
-		// References: 
-		// (i) https://en.wikipedia.org/wiki/Haversine_formula
-		// (ii) https://www.movable-type.co.uk/scripts/latlong.html
-		
+
+	// Calculate the mileage of the trip using Haversine formula, then convert to nautical miles
+	// References: 
+	// (i) https://en.wikipedia.org/wiki/Haversine_formula
+	// (ii) https://www.movable-type.co.uk/scripts/latlong.html
+	public static double calculateTraveledDistance(double latitudeFrom, double longitudeFrom, double latitudeTo, double longitudeTo) {		
 		// Haversine formula:	a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
 		//						c = 2 ⋅ atan2( √a, √(1−a) )
 		//						d = R ⋅ c
@@ -180,7 +179,7 @@ public class Utilities {
 	public static Map<String, Object> loadAirportData(String file) {
 		// Read the Airport Data File
 		Map<String, Object> dictAirportInfo = new HashMap<String, Object>(); 
-		System.out.println("Loading airport data from '" + file + "'...");
+		Logger.getInstance().logMessage("Loading airport data from '" + file + "'...");
 		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 		    String line;
 		    while ((line = br.readLine()) != null) {
@@ -191,7 +190,7 @@ public class Utilities {
 				// (a) Check if total number of fields parsed is expected
 				if (cols.length != expectedColumns) {
 					Utilities.reportRowSyntaxError("Utilities.loadAirportData", file, 
-							"Total number of fields should be "+expectedColumns+".", line);
+							"Total number of fields should be "+expectedColumns+", but got "+cols.length+".", line);
 					continue;
 				}
 				double aLat, aLong;
@@ -227,7 +226,7 @@ public class Utilities {
 				}
 		    }
 		} catch (Exception e) {
-			Logger.getInstance().logError("Load Airport Data: " + e.getMessage());
+			Logger.getInstance().logError("Utilities.loadAirportData: " + e.getMessage());
 			setErrorStatus(true);
 		}		
 		
