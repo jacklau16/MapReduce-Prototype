@@ -11,6 +11,7 @@
 **Student ID**: 28838142
 
 **Content**:
-    - **CSMCC16 Coursework**: Source codes
-    - **Test Results**: Test results files
-    - **binary**: Binary distribution files of the prototype
+<ul>
+<li>**CSMCC16 Coursework**: Source codes</li>
+<li>**Test Results**: Test results files</li>
+<li>**binary**: Binary distribution files of the prototype</li>
