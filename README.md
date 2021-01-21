@@ -9,3 +9,8 @@
 **Student name**: Jack Lau
 
 **Student ID**: 28838142
+
+**Content**:
+    - **CSMCC16 Coursework**: Source codes
+    - **Test Results**: Test results files
+    - **binary**: Binary distribution files of the prototype
