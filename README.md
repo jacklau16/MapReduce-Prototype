@@ -12,7 +12,7 @@
 
 **Content**:
 <ul>
-<li><b>CSMCC16 Coursework</b>: Source codes</li>
+<li><b>CSMCC16 Coursework</b>: Source codes (`java`)</li>
 <li><b>Test Results</b>: Test results files</li>
 <li><b>binary</b>: Binary distribution files of the prototype</li>
 </ul>
